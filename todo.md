@@ -9,13 +9,14 @@ No DEX routing — no slippage, no MEV. Agents call it programmatically, humans 
 
 - **Contracts**: Hardhat + Solidity (shared TypeScript toolchain with CLI)
 - **CLI**: Node.js / TypeScript (Commander.js)
-- **Relay**: Simple HTTP server (Hono or Express)
+- **Discovery**: Supabase (offers DB + realtime subscriptions)
+- **Settlement**: On-chain Escrow contract
 - **Chain**: Base (testnet first, then mainnet)
 
 ## Architecture Decision
 
-Use an `actionType` field in the offer schema from day one.
-MVP only implements `swap`, but the data model supports future primitives (rfq, lend, hedge, bridge) without rewriting.
+- Use an `actionType` field in the offer schema from day one. MVP only implements `swap`, but the data model supports future primitives (rfq, lend, hedge, bridge) without rewriting.
+- **Hybrid architecture**: Escrow contract handles settlement (돈), Supabase handles discovery (오퍼 조회/실시간 알림). Framework-agnostic — 어떤 agent framework이든 HTTP/SDK로 연결 가능.
 
 ```
 zero-otc propose --action swap  --sell 1000 USDC --buy 0.5 ETH
@@ -37,15 +38,18 @@ zero-otc propose --action lend  --offer 5000 USDC --rate 0.05 --duration 7d  # l
 - [x] `zero-otc list` — stub created
 - [x] `zero-otc history` — stub created
 - [x] `zero-otc trust` — stub created
-- [ ] Wire propose to escrow contract + relay
-- [ ] Wire accept to escrow contract + relay
-- [ ] Wire list to relay server query
-- [ ] Wire history to on-chain event query
-- [ ] Wire trust to ERC-8004 contract query
+- [ ] Wire propose → escrow contract + Supabase insert
+- [ ] Wire accept → escrow contract + Supabase update
+- [ ] Wire list → Supabase query (open offers)
+- [ ] Wire history → Supabase query (settled/cancelled)
+- [ ] Wire trust → ERC-8004 contract query
 
-### 3. Discovery Layer
-- [ ] Relay server for offer broadcasting (simple HTTP + SQLite)
-- [ ] Offer storage and retrieval API
+### 3. Discovery Layer (Supabase)
+- [ ] Create Supabase project + `offers` table schema
+- [ ] Supabase client module (`src/supabase.ts`)
+- [ ] Insert offer on propose (mirror on-chain data)
+- [ ] Update offer status on accept/settle/cancel
+- [ ] Realtime subscription for new offers (agent push notifications)
 
 ### 4. Agent Automation
 - [ ] Auto-accept policy engine (trust score + oracle price threshold)
@@ -77,7 +81,7 @@ zero-otc propose --action lend  --offer 5000 USDC --rate 0.05 --duration 7d  # l
 
 ### Agent Ecosystem Integration
 - [ ] SDK / API wrapper for programmatic access (not CLI-only)
-- [ ] Virtuals agent ecosystem integration
+- [ ] Agent framework integrations (Eliza, LangChain, CrewAI 등 — framework-agnostic)
 - [ ] Agent tool registry listing
 - [ ] Agent marketplace discovery
 
