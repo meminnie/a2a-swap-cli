@@ -25,18 +25,23 @@ zero-otc propose --action lend  --offer 5000 USDC --rate 0.05 --duration 7d  # l
 
 ## Phase 1: MVP (Base chain, same-chain, escrow, swap only)
 
-### 1. Smart Contracts (start here)
-- [ ] Escrow contract — both parties deposit tokens, swap executes on mutual deposit
+### 1. Smart Contracts
+- [x] Escrow contract — both parties deposit tokens, swap executes on mutual deposit
 - [ ] ERC-8004 trust score integration — on-chain reputation check
 - [ ] Trust gating — minimum score threshold to participate in trades
 - [ ] Deploy to Base Sepolia testnet
 
-### 2. Core CLI Commands
-- [ ] `zero-otc propose --action swap --sell <amount> <token> --buy <amount> <token>` — create offer
-- [ ] `zero-otc accept <offer-id>` — match and settle via escrow
-- [ ] `zero-otc list` — view open OTC offers
-- [ ] `zero-otc history` — past trade records
-- [ ] `zero-otc trust <address>` — check ERC-8004 score
+### 2. Core CLI Commands (scaffolded, need contract integration)
+- [x] `zero-otc propose` — stub created
+- [x] `zero-otc accept` — stub created
+- [x] `zero-otc list` — stub created
+- [x] `zero-otc history` — stub created
+- [x] `zero-otc trust` — stub created
+- [ ] Wire propose to escrow contract + relay
+- [ ] Wire accept to escrow contract + relay
+- [ ] Wire list to relay server query
+- [ ] Wire history to on-chain event query
+- [ ] Wire trust to ERC-8004 contract query
 
 ### 3. Discovery Layer
 - [ ] Relay server for offer broadcasting (simple HTTP + SQLite)
@@ -66,7 +71,7 @@ zero-otc propose --action lend  --offer 5000 USDC --rate 0.05 --duration 7d  # l
 ### Security
 - [ ] Smart contract audit
 - [ ] Input validation on all CLI parameters
-- [ ] No hardcoded secrets — env-based config
+- [x] No hardcoded secrets — env-based config (done: src/config.ts)
 
 ## Phase 3: Distribution & Growth
 
