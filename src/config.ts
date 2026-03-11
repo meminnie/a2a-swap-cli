@@ -18,7 +18,8 @@ export interface Config {
   readonly privateKey: string
   readonly rpcUrl: string
   readonly escrowAddress: string
-  readonly relayUrl: string
+  readonly supabaseUrl: string
+  readonly supabaseAnonKey: string
   readonly chain: string
   readonly minTrustScore: number
 }
@@ -28,7 +29,8 @@ export function loadConfig(): Config {
     privateKey: requireEnv("PRIVATE_KEY"),
     rpcUrl: optionalEnv("RPC_URL", "https://sepolia.base.org"),
     escrowAddress: requireEnv("ESCROW_ADDRESS"),
-    relayUrl: optionalEnv("RELAY_URL", "http://localhost:3000"),
+    supabaseUrl: requireEnv("SUPABASE_URL"),
+    supabaseAnonKey: requireEnv("SUPABASE_ANON_KEY"),
     chain: optionalEnv("CHAIN", "base-sepolia"),
     minTrustScore: Number(optionalEnv("MIN_TRUST_SCORE", "80")),
   }
