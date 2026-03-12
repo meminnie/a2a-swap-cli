@@ -1,5 +1,10 @@
 import { Command } from "commander"
+import { ethers } from "ethers"
 import type { ActionType } from "../../types/offer"
+import { loadConfig } from "../../config"
+import { getEscrowContract, getSigner } from "../../contract"
+import { getSupabaseClient, insertOffer } from "../../supabase"
+import { resolveTokenAddress } from "../../tokens"
 
 interface ProposeOptions {
   readonly action: ActionType
@@ -27,15 +32,67 @@ export function registerProposeCommand(program: Command): void {
           throw new Error("Invalid format. Use: --sell '1000 USDC' --buy '0.5 ETH'")
         }
 
-        // TODO: connect to escrow contract and create on-chain offer
-        // TODO: broadcast to relay server
+        const config = loadConfig()
+        const escrow = getEscrowContract(config)
+        const signer = getSigner(config)
+        const supabase = getSupabaseClient(config)
 
-        console.info(`Offer created:`)
+        const sellTokenAddress = resolveTokenAddress(sellToken, options.chain)
+        const buyTokenAddress = resolveTokenAddress(buyToken, options.chain)
+
+        const sellAmountWei = ethers.parseUnits(sellAmount, 18)
+        const buyAmountWei = ethers.parseUnits(buyAmount, 18)
+        const duration = Number(options.duration)
+
+        console.info("Creating on-chain offer...")
+        const tx = await escrow.createOffer(
+          sellTokenAddress,
+          sellAmountWei,
+          buyTokenAddress,
+          buyAmountWei,
+          duration
+        )
+
+        console.info(`Transaction sent: ${tx.hash}`)
+        const receipt = await tx.wait()
+
+        const offerCreatedEvent = receipt.logs
+          .map((log: ethers.Log) => {
+            try {
+              return escrow.interface.parseLog({ topics: [...log.topics], data: log.data })
+            } catch {
+              return null
+            }
+          })
+          .find((parsed: ethers.LogDescription | null) => parsed?.name === "OfferCreated")
+
+        if (!offerCreatedEvent) {
+          throw new Error("OfferCreated event not found in transaction receipt")
+        }
+
+        const offerId = Number(offerCreatedEvent.args.offerId)
+
+        await insertOffer(supabase, {
+          id: offerId,
+          action_type: options.action,
+          proposer: await signer.getAddress(),
+          sell_token: sellTokenAddress,
+          sell_amount: sellAmount,
+          buy_token: buyTokenAddress,
+          buy_amount: buyAmount,
+          chain: options.chain,
+          deadline: Math.floor(Date.now() / 1000) + duration,
+          tx_hash: tx.hash,
+        })
+
+        console.info(`Offer created successfully:`)
+        console.info(`  Offer ID: ${offerId}`)
         console.info(`  Action:   ${options.action}`)
         console.info(`  Sell:     ${sellAmount} ${sellToken}`)
         console.info(`  Buy:      ${buyAmount} ${buyToken}`)
         console.info(`  Chain:    ${options.chain}`)
         console.info(`  Duration: ${options.duration}s`)
+        console.info(`  Tx:       ${tx.hash}`)
       } catch (error) {
         const message = error instanceof Error ? error.message : "Unknown error"
         console.error(`Failed to create offer: ${message}`)
