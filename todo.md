@@ -32,26 +32,36 @@ zero-otc propose --action lend  --offer 5000 USDC --rate 0.05 --duration 7d  # l
 - [ ] Trust gating — minimum score threshold to participate in trades
 - [ ] Deploy to Base Sepolia testnet
 
-### 2. Core CLI Commands (scaffolded, need contract integration)
-- [x] `zero-otc propose` — stub created
-- [x] `zero-otc accept` — stub created
-- [x] `zero-otc list` — stub created
-- [x] `zero-otc history` — stub created
-- [x] `zero-otc trust` — stub created
-- [ ] Wire propose → escrow contract + Supabase insert
-- [ ] Wire accept → escrow contract + Supabase update
-- [ ] Wire list → Supabase query (open offers)
-- [ ] Wire history → Supabase query (settled/cancelled)
-- [ ] Wire trust → ERC-8004 contract query
+### 2. Core CLI Commands
+- [x] `zero-otc propose` — creates on-chain offer + inserts to Supabase
+- [x] `zero-otc accept` — accepts offer + approves tokens + deposits into escrow + updates Supabase
+- [x] `zero-otc list` — queries open offers from Supabase, table output
+- [x] `zero-otc history` — queries settled/cancelled trades by signer address
+- [x] `zero-otc trust` — checks ERC-8004 trust score (placeholder if registry not configured)
 
-### 3. Discovery Layer (Supabase)
-- [ ] Create Supabase project + `offers` table schema
-- [ ] Supabase client module (`src/supabase.ts`)
-- [ ] Insert offer on propose (mirror on-chain data)
-- [ ] Update offer status on accept/settle/cancel
+### 3. Infrastructure Modules
+- [x] `src/contract.ts` — ethers provider/signer/escrow/erc20 contract factory
+- [x] `src/supabase.ts` — Supabase client + CRUD (insert, update, fetchOpen, fetchHistory)
+- [x] `src/tokens.ts` — token symbol ↔ address mapping (Base Sepolia + Mainnet: USDC, WETH, DAI)
+- [x] `src/config.ts` — env config with trustRegistryAddress support
+- [x] `supabase/schema.sql` — offers table DDL + indexes + RLS policies
+- [x] `scripts/deploy.ts` — Hardhat deploy script
+
+### 4. Discovery Layer (Supabase)
+- [x] `offers` table schema designed (supabase/schema.sql)
+- [x] Supabase client module (`src/supabase.ts`)
+- [x] Insert offer on propose (mirror on-chain data)
+- [x] Update offer status on accept/settle
 - [ ] Realtime subscription for new offers (agent push notifications)
 
-### 4. Agent Automation
+### 5. Remaining for Phase 1
+- [ ] Create Supabase project + run schema.sql
+- [ ] Deploy Escrow to Base Sepolia (`npx hardhat run scripts/deploy.ts --network baseSepolia`)
+- [ ] End-to-end testnet test (propose → accept → settle)
+- [ ] ERC-8004 trust score contract integration
+- [ ] Trust gating on acceptOffer
+
+### 6. Agent Automation
 - [ ] Auto-accept policy engine (trust score + oracle price threshold)
 - [ ] Example: `if trust_score > 80 && price <= oracle_price * 1.01 → accept`
 
