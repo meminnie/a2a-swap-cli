@@ -19,9 +19,9 @@ No DEX routing — no slippage, no MEV. Agents call it programmatically, humans 
 - **Hybrid architecture**: Escrow contract handles settlement (돈), Supabase handles discovery (오퍼 조회/실시간 알림). Framework-agnostic — 어떤 agent framework이든 HTTP/SDK로 연결 가능.
 
 ```
-zero-otc propose --action swap  --sell 1000 USDC --buy 0.5 ETH
-zero-otc propose --action rfq   --need 0.5 ETH --budget 1000 USDC       # later
-zero-otc propose --action lend  --offer 5000 USDC --rate 0.05 --duration 7d  # later
+zero-otc propose --action swap  --sell "1000 USDC" --buy "0.5 ETH"
+zero-otc propose --action rfq   --need "0.5 ETH" --budget "1000 USDC"       # later
+zero-otc propose --action lend  --offer "5000 USDC" --rate 0.05 --duration 7d  # later
 ```
 
 ## Phase 1: MVP (Base chain, same-chain, escrow, swap only)
@@ -42,12 +42,17 @@ zero-otc propose --action lend  --offer 5000 USDC --rate 0.05 --duration 7d  # l
 - [x] `zero-otc list` — queries open offers from Supabase, table output
 - [x] `zero-otc history` — queries settled/cancelled trades by signer address
 - [x] `zero-otc trust` — checks ERC-8004 trust score (placeholder if registry not configured)
+- [x] `zero-otc watch` — realtime offer monitoring via Supabase Realtime
+- [x] `zero-otc auto-accept` — automated offer evaluation + accept via oracle price policy
+- [x] `--wallet <name>` option — multi-wallet support (loads `PRIVATE_KEY_<NAME>` from .env)
 
 ### 3. Infrastructure Modules
-- [x] `src/contract.ts` — ethers provider/signer/escrow/erc20 contract factory
-- [x] `src/supabase.ts` — Supabase client + CRUD (insert, update, fetchOpen, fetchHistory)
-- [x] `src/tokens.ts` — token symbol ↔ address mapping (Base Sepolia + Mainnet: USDC, WETH, DAI)
-- [x] `src/config.ts` — env config with trustRegistryAddress support
+- [x] `src/contract.ts` — ethers provider/signer/escrow/erc20 contract factory (shared signer support)
+- [x] `src/supabase.ts` — Supabase client + CRUD (insert, update, fetchOpen, fetchHistory, subscribeOffers)
+- [x] `src/tokens.ts` — token symbol ↔ address mapping (Base Sepolia + Mainnet: USDC, WETH, DAI, tUSDC, tWETH)
+- [x] `src/config.ts` — env config with multi-wallet + trustRegistryAddress support
+- [x] `src/oracle.ts` — CoinGecko price oracle (token price + pair rate)
+- [x] `src/policy.ts` — auto-accept policy engine (USD value comparison + slippage threshold)
 - [x] `supabase/schema.sql` — offers table DDL + indexes + RLS policies
 - [x] `scripts/deploy.ts` — Hardhat deploy script
 - [x] `scripts/deploy-mocks.ts` — Mock token deploy + mint script
@@ -64,40 +69,47 @@ zero-otc propose --action lend  --offer 5000 USDC --rate 0.05 --duration 7d  # l
 - [x] Create Supabase project + run schema.sql
 - [x] Deploy Escrow to Base Sepolia
 - [x] End-to-end testnet test (propose → accept → settle) ✅ Verified on-chain: Offer #3 settled
-- [ ] ERC-8004 trust score contract integration
+- [x] Auto-accept policy engine with CoinGecko oracle ✅ Verified: correct REJECT on bad deals, ACCEPT on fair deals
+- [ ] ERC-8004 trust score contract integration (deferred — mock registry on testnet, real on mainnet)
 - [ ] Trust gating on acceptOffer
 
 ### 6. Agent Automation
-- [ ] Auto-accept policy engine (trust score + oracle price threshold)
-- [ ] Example: `if trust_score > 80 && price <= oracle_price * 1.01 → accept`
+- [x] Auto-accept policy engine (oracle price threshold)
+- [x] `auto-accept` command with `--max-slippage`, `--dry-run`, `--wallet` options
+- [ ] Trust score integration in policy (when ERC-8004 registry is ready)
+- [x] Multi-token policy rules — per-pair slippage config via `--policy-file` JSON + `resolveSlippage()`
 
 ## Phase 2: Hardening + RFQ
 
 ### Counterparty Griefing Mitigation
 - [x] Offer deposit / bonding mechanism to prevent no-show attacks (proposer locks tokens on propose)
-- [ ] Timeout and auto-refund for stale offers
+- [x] Timeout and auto-refund for stale offers (`refund` command + contract handles Open & Accepted status)
 - [ ] Reputation penalty for failed settlements
 
 ### Settlement Robustness
-- [ ] Handle partial failures — fund locking prevention
+- [x] Handle partial failures — deposit window (15min) + `claimDepositTimeout()` prevents fund locking
 - [ ] Two-phase commit or HTLC option for trustless settlement
-- [ ] Gas optimization for escrow operations
+- [x] Gas optimization — struct packing (8→6 storage slots, ~25% gas savings), `uint48` deadline, gasLimit overrides
 
 ### RFQ Primitive
-- [ ] `--action rfq` — agents broadcast "I need X", get competing quotes
-- [ ] Quote response and selection flow
-- [ ] Helps solve liquidity cold start
+- [x] `zero-otc rfq` — broadcast "I need X, budget Y", get competing quotes
+- [x] `zero-otc quote <rfq-id> --offer "amount token"` — submit quote for an RFQ
+- [x] `zero-otc pick <rfq-id> <quote-id>` — pick best quote, create on-chain escrow
+- [x] Quote auto-accept — quoter auto-accepts escrow when their quote is picked (via Supabase Realtime)
+- [x] Supabase `quotes` table + realtime subscriptions
+- [x] End-to-end verified: RFQ → Quote → Pick → Auto-settle ✅
 
 ### Security
 - [ ] Smart contract audit
-- [ ] Input validation on all CLI parameters
+- [x] Input validation on all CLI parameters (amount > 0, duration > 0 and <= 30 days, valid action type)
+- [x] Contract-level validation (zero amounts, same token, duration limits — custom errors)
 - [x] No hardcoded secrets — env-based config (done: src/config.ts)
 
 ## Phase 3: Distribution & Growth
 
 ### Agent Ecosystem Integration
-- [ ] SDK / API wrapper for programmatic access (not CLI-only)
-- [ ] Agent framework integrations (Eliza, LangChain, CrewAI 등 — framework-agnostic)
+- [x] SDK / API wrapper for programmatic access (`src/sdk/` — ZeroOTC client class)
+- [x] Agent framework integrations — Eliza plugin (`src/integrations/eliza/`) + Virtuals GAME worker (`src/integrations/virtuals/`)
 - [ ] Agent tool registry listing
 - [ ] Agent marketplace discovery
 
