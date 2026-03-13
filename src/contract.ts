@@ -18,16 +18,20 @@ export function getSigner(config: Config): ethers.Wallet {
   return new ethers.Wallet(config.privateKey, provider)
 }
 
-export function getEscrowContract(config: Config): ethers.Contract {
-  const signer = getSigner(config)
-  return new ethers.Contract(config.escrowAddress, loadEscrowAbi(), signer)
+export function getEscrowContract(
+  config: Config,
+  signer?: ethers.Wallet
+): ethers.Contract {
+  const s = signer ?? getSigner(config)
+  return new ethers.Contract(config.escrowAddress, loadEscrowAbi(), s)
 }
 
 export function getErc20Contract(
   tokenAddress: string,
-  config: Config
+  config: Config,
+  signer?: ethers.Wallet
 ): ethers.Contract {
-  const signer = getSigner(config)
+  const s = signer ?? getSigner(config)
   const erc20Abi = [
     "function approve(address spender, uint256 amount) returns (bool)",
     "function allowance(address owner, address spender) view returns (uint256)",
@@ -35,5 +39,5 @@ export function getErc20Contract(
     "function decimals() view returns (uint8)",
     "function symbol() view returns (string)",
   ]
-  return new ethers.Contract(tokenAddress, erc20Abi, signer)
+  return new ethers.Contract(tokenAddress, erc20Abi, s)
 }
