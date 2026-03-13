@@ -92,6 +92,34 @@ export async function fetchOpenOffers(
   return (data ?? []) as ReadonlyArray<OfferRow>
 }
 
+export function subscribeOffers(
+  client: SupabaseClient,
+  onInsert: (offer: OfferRow) => void,
+  onUpdate?: (offer: OfferRow) => void
+): { unsubscribe: () => void } {
+  const channel = client
+    .channel("offers-realtime")
+    .on(
+      "postgres_changes",
+      { event: "INSERT", schema: "public", table: "offers" },
+      (payload) => onInsert(payload.new as OfferRow)
+    )
+    .on(
+      "postgres_changes",
+      { event: "UPDATE", schema: "public", table: "offers" },
+      (payload) => {
+        if (onUpdate) onUpdate(payload.new as OfferRow)
+      }
+    )
+    .subscribe()
+
+  return {
+    unsubscribe: () => {
+      client.removeChannel(channel)
+    },
+  }
+}
+
 export async function fetchHistory(
   client: SupabaseClient,
   address: string,
