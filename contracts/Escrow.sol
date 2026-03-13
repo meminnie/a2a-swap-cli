@@ -115,12 +115,14 @@ contract Escrow is ReentrancyGuard {
     }
 
     /// @notice Deposit tokens into escrow (both parties must deposit)
+    /// @dev Proposer can deposit when Open or Accepted; acceptor only when Accepted
     function deposit(uint256 offerId) external nonReentrant {
         Offer storage offer = offers[offerId];
-        if (offer.status != OfferStatus.Accepted) revert OfferNotAccepted();
         if (block.timestamp >= offer.deadline) revert OfferExpired();
 
         if (msg.sender == offer.proposer) {
+            if (offer.status != OfferStatus.Open && offer.status != OfferStatus.Accepted)
+                revert OfferNotOpen();
             if (offer.proposerDeposited) revert AlreadyDeposited();
             offer.proposerDeposited = true;
             IERC20(offer.sellToken).safeTransferFrom(
@@ -129,6 +131,7 @@ contract Escrow is ReentrancyGuard {
                 offer.sellAmount
             );
         } else if (msg.sender == offer.acceptor) {
+            if (offer.status != OfferStatus.Accepted) revert OfferNotAccepted();
             if (offer.acceptorDeposited) revert AlreadyDeposited();
             offer.acceptorDeposited = true;
             IERC20(offer.buyToken).safeTransferFrom(
@@ -148,13 +151,21 @@ contract Escrow is ReentrancyGuard {
         }
     }
 
-    /// @notice Cancel an open offer (only proposer)
-    function cancelOffer(uint256 offerId) external {
+    /// @notice Cancel an open offer (only proposer), refunds deposit if any
+    function cancelOffer(uint256 offerId) external nonReentrant {
         Offer storage offer = offers[offerId];
         if (msg.sender != offer.proposer) revert OnlyProposer();
         if (offer.status != OfferStatus.Open) revert OfferNotOpen();
 
         offer.status = OfferStatus.Cancelled;
+
+        if (offer.proposerDeposited) {
+            IERC20(offer.sellToken).safeTransfer(
+                offer.proposer,
+                offer.sellAmount
+            );
+        }
+
         emit OfferCancelled(offerId);
     }
 
