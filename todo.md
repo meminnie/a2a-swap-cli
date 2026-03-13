@@ -58,7 +58,7 @@ zero-otc propose --action lend  --offer 5000 USDC --rate 0.05 --duration 7d  # l
 - [x] Supabase client module (`src/supabase.ts`)
 - [x] Insert offer on propose (mirror on-chain data)
 - [x] Update offer status on accept/settle
-- [ ] Realtime subscription for new offers (agent push notifications)
+- [x] Realtime subscription for new offers (`watch` command + `subscribeOffers` SDK)
 
 ### 5. Remaining for Phase 1
 - [x] Create Supabase project + run schema.sql
