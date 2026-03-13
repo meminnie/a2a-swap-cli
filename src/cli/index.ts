@@ -2,6 +2,7 @@
 import { Command } from "commander"
 import { registerProposeCommand } from "./commands/propose"
 import { registerAcceptCommand } from "./commands/accept"
+import { registerDepositCommand } from "./commands/deposit"
 import { registerListCommand } from "./commands/list"
 import { registerHistoryCommand } from "./commands/history"
 import { registerTrustCommand } from "./commands/trust"
@@ -15,6 +16,7 @@ program
 
 registerProposeCommand(program)
 registerAcceptCommand(program)
+registerDepositCommand(program)
 registerListCommand(program)
 registerHistoryCommand(program)
 registerTrustCommand(program)
