@@ -7,6 +7,12 @@ import { registerListCommand } from "./commands/list"
 import { registerHistoryCommand } from "./commands/history"
 import { registerTrustCommand } from "./commands/trust"
 import { registerWatchCommand } from "./commands/watch"
+import { registerAutoAcceptCommand } from "./commands/auto-accept"
+import { registerRefundCommand } from "./commands/refund"
+import { registerRfqCommand } from "./commands/rfq"
+import { registerQuoteCommand } from "./commands/quote"
+import { registerPickCommand } from "./commands/pick"
+import { registerClaimTimeoutCommand } from "./commands/claim-timeout"
 
 const program = new Command()
 
@@ -22,5 +28,11 @@ registerListCommand(program)
 registerHistoryCommand(program)
 registerTrustCommand(program)
 registerWatchCommand(program)
+registerAutoAcceptCommand(program)
+registerRefundCommand(program)
+registerRfqCommand(program)
+registerQuoteCommand(program)
+registerPickCommand(program)
+registerClaimTimeoutCommand(program)
 
 program.parse()

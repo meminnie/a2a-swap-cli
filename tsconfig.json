@@ -15,5 +15,5 @@
     "sourceMap": true
   },
   "include": ["src/**/*", "test/**/*", "hardhat.config.ts"],
-  "exclude": ["node_modules", "dist", "artifacts", "cache"]
+  "exclude": ["node_modules", "dist", "artifacts", "cache", "src/integrations"]
 }

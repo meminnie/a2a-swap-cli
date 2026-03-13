@@ -2,9 +2,19 @@
   "name": "a2a-cli",
   "version": "1.0.0",
   "description": "AI agent-to-agent OTC swap CLI with ERC-8004 trust gating",
-  "main": "dist/src/cli/index.js",
+  "main": "dist/src/sdk/index.js",
+  "types": "dist/src/sdk/index.d.ts",
   "bin": {
     "zero-otc": "dist/src/cli/index.js"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/src/sdk/index.d.ts",
+      "default": "./dist/src/sdk/index.js"
+    },
+    "./cli": "./dist/src/cli/index.js",
+    "./eliza": "./dist/src/integrations/eliza/index.js",
+    "./virtuals": "./dist/src/integrations/virtuals/index.js"
   },
   "scripts": {
     "build": "hardhat compile && tsc",
@@ -31,6 +41,14 @@
     "hardhat": "^2.28.6",
     "ts-node": "^10.9.2",
     "typescript": "^5.9.3"
+  },
+  "peerDependencies": {
+    "@elizaos/core": ">=0.1.0",
+    "@virtuals-protocol/game": ">=1.0.0"
+  },
+  "peerDependenciesMeta": {
+    "@elizaos/core": { "optional": true },
+    "@virtuals-protocol/game": { "optional": true }
   },
   "dependencies": {
     "@openzeppelin/contracts": "^5.6.1",
