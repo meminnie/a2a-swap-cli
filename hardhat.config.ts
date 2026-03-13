@@ -4,6 +4,9 @@ import * as dotenv from "dotenv"
 
 dotenv.config()
 
+const deployKey = process.env.PRIVATE_KEY ?? process.env.PRIVATE_KEY_TEST1
+const accounts = deployKey ? [deployKey] : []
+
 const config: HardhatUserConfig = {
   solidity: {
     version: "0.8.24",
@@ -18,11 +21,11 @@ const config: HardhatUserConfig = {
     hardhat: {},
     baseSepolia: {
       url: process.env.BASE_SEPOLIA_RPC_URL || "https://sepolia.base.org",
-      accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : [],
+      accounts,
     },
     base: {
       url: process.env.BASE_RPC_URL || "https://mainnet.base.org",
-      accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : [],
+      accounts,
     },
   },
 }

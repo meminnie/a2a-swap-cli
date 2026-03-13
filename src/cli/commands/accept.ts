@@ -8,14 +8,15 @@ export function registerAcceptCommand(program: Command): void {
   program
     .command("accept <offer-id>")
     .description("Accept an open OTC offer and settle via escrow")
-    .action(async (offerId: string) => {
+    .option("--wallet <name>", "Wallet name (loads PRIVATE_KEY_<NAME> from .env)")
+    .action(async (offerId: string, options: { readonly wallet?: string }) => {
       try {
         const id = Number(offerId)
         if (Number.isNaN(id) || id < 0) {
           throw new Error("Invalid offer ID. Must be a non-negative number.")
         }
 
-        const config = loadConfig()
+        const config = loadConfig(options.wallet)
         const signer = getSigner(config)
         const escrow = getEscrowContract(config, signer)
         const supabase = getSupabaseClient(config)

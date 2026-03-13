@@ -5,6 +5,7 @@ import { loadConfig } from "../../config"
 import { getEscrowContract, getErc20Contract, getSigner } from "../../contract"
 import { getSupabaseClient, insertOffer } from "../../supabase"
 import { resolveTokenAddress } from "../../tokens"
+import { ACTION_TYPES } from "../../types/offer"
 
 interface ProposeOptions {
   readonly action: ActionType
@@ -12,6 +13,7 @@ interface ProposeOptions {
   readonly buy: string
   readonly chain: string
   readonly duration: string
+  readonly wallet?: string
 }
 
 export function registerProposeCommand(program: Command): void {
@@ -23,6 +25,7 @@ export function registerProposeCommand(program: Command): void {
     .option("--action <type>", "Action type (swap, rfq, lend, hedge, bridge)", "swap")
     .option("--chain <chain>", "Target chain", "base-sepolia")
     .option("--duration <seconds>", "Offer duration in seconds", "3600")
+    .option("--wallet <name>", "Wallet name (loads PRIVATE_KEY_<NAME> from .env)")
     .action(async (options: ProposeOptions) => {
       try {
         const [sellAmount, sellToken] = options.sell.split(" ")
@@ -32,7 +35,28 @@ export function registerProposeCommand(program: Command): void {
           throw new Error("Invalid format. Use: --sell '1000 USDC' --buy '0.5 ETH'")
         }
 
-        const config = loadConfig()
+        const sellNum = Number(sellAmount)
+        const buyNum = Number(buyAmount)
+        if (Number.isNaN(sellNum) || sellNum <= 0) {
+          throw new Error(`Invalid sell amount: ${sellAmount}. Must be a positive number.`)
+        }
+        if (Number.isNaN(buyNum) || buyNum <= 0) {
+          throw new Error(`Invalid buy amount: ${buyAmount}. Must be a positive number.`)
+        }
+
+        const duration = Number(options.duration)
+        if (Number.isNaN(duration) || duration <= 0) {
+          throw new Error(`Invalid duration: ${options.duration}. Must be a positive number of seconds.`)
+        }
+        if (duration > 30 * 24 * 60 * 60) {
+          throw new Error("Duration cannot exceed 30 days.")
+        }
+
+        if (!ACTION_TYPES.includes(options.action)) {
+          throw new Error(`Invalid action: ${options.action}. Supported: ${ACTION_TYPES.join(", ")}`)
+        }
+
+        const config = loadConfig(options.wallet)
         const signer = getSigner(config)
         const escrow = getEscrowContract(config, signer)
         const supabase = getSupabaseClient(config)
@@ -42,7 +66,6 @@ export function registerProposeCommand(program: Command): void {
 
         const sellAmountWei = ethers.parseUnits(sellAmount, 18)
         const buyAmountWei = ethers.parseUnits(buyAmount, 18)
-        const duration = Number(options.duration)
 
         let nonce = await signer.getNonce()
 

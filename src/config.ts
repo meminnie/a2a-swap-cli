@@ -25,9 +25,21 @@ export interface Config {
   readonly trustRegistryAddress: string | null
 }
 
-export function loadConfig(): Config {
+function resolvePrivateKey(wallet?: string): string {
+  if (wallet) {
+    const envKey = `PRIVATE_KEY_${wallet.toUpperCase()}`
+    const value = process.env[envKey]
+    if (!value) {
+      throw new Error(`Wallet "${wallet}" not found. Set ${envKey} in .env`)
+    }
+    return value
+  }
+  return requireEnv("PRIVATE_KEY")
+}
+
+export function loadConfig(wallet?: string): Config {
   return {
-    privateKey: requireEnv("PRIVATE_KEY"),
+    privateKey: resolvePrivateKey(wallet),
     rpcUrl: optionalEnv("RPC_URL", "https://sepolia.base.org"),
     escrowAddress: requireEnv("ESCROW_ADDRESS"),
     supabaseUrl: requireEnv("SUPABASE_URL"),
