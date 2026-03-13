@@ -6,6 +6,7 @@ import { registerDepositCommand } from "./commands/deposit"
 import { registerListCommand } from "./commands/list"
 import { registerHistoryCommand } from "./commands/history"
 import { registerTrustCommand } from "./commands/trust"
+import { registerWatchCommand } from "./commands/watch"
 
 const program = new Command()
 
@@ -20,5 +21,6 @@ registerDepositCommand(program)
 registerListCommand(program)
 registerHistoryCommand(program)
 registerTrustCommand(program)
+registerWatchCommand(program)
 
 program.parse()
