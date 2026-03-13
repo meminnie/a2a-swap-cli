@@ -4,7 +4,7 @@ import * as fs from "fs"
 import type { Config } from "./config"
 
 function loadEscrowAbi(): ethers.InterfaceAbi {
-  const artifactPath = path.resolve(__dirname, "../../artifacts/contracts/Escrow.sol/Escrow.json")
+  const artifactPath = path.resolve(__dirname, "../artifacts/contracts/Escrow.sol/Escrow.json")
   const artifact = JSON.parse(fs.readFileSync(artifactPath, "utf-8"))
   return artifact.abi as ethers.InterfaceAbi
 }
