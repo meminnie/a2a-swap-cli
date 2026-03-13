@@ -120,6 +120,166 @@ export function subscribeOffers(
   }
 }
 
+// ── Quotes (RFQ) ──
+
+export type QuoteStatus = "pending" | "accepted" | "rejected" | "expired"
+
+export interface QuoteRow {
+  readonly id: number
+  readonly rfq_id: number
+  readonly quoter: string
+  readonly sell_token: string
+  readonly sell_amount: string
+  readonly buy_token: string
+  readonly buy_amount: string
+  readonly chain: string
+  readonly status: QuoteStatus
+  readonly escrow_offer_id: number | null
+  readonly created_at: string
+}
+
+export async function insertRfq(
+  client: SupabaseClient,
+  rfq: {
+    readonly action_type: "rfq"
+    readonly proposer: string
+    readonly buy_token: string
+    readonly buy_amount: string
+    readonly sell_token: string
+    readonly sell_amount: string
+    readonly chain: string
+    readonly deadline: number
+  }
+): Promise<OfferRow> {
+  const { data, error } = await client
+    .from("offers")
+    .insert({
+      ...rfq,
+      status: "open" as OfferStatus,
+    })
+    .select()
+    .single()
+
+  if (error) {
+    throw new Error(`Failed to insert RFQ: ${error.message}`)
+  }
+  return data as OfferRow
+}
+
+export async function insertQuote(
+  client: SupabaseClient,
+  quote: {
+    readonly rfq_id: number
+    readonly quoter: string
+    readonly sell_token: string
+    readonly sell_amount: string
+    readonly buy_token: string
+    readonly buy_amount: string
+    readonly chain: string
+  }
+): Promise<QuoteRow> {
+  const { data, error } = await client
+    .from("quotes")
+    .insert({ ...quote, status: "pending" as QuoteStatus })
+    .select()
+    .single()
+
+  if (error) {
+    throw new Error(`Failed to insert quote: ${error.message}`)
+  }
+  return data as QuoteRow
+}
+
+export async function fetchQuotesForRfq(
+  client: SupabaseClient,
+  rfqId: number
+): Promise<ReadonlyArray<QuoteRow>> {
+  const { data, error } = await client
+    .from("quotes")
+    .select("*")
+    .eq("rfq_id", rfqId)
+    .eq("status", "pending")
+    .order("created_at", { ascending: true })
+
+  if (error) {
+    throw new Error(`Failed to fetch quotes: ${error.message}`)
+  }
+  return (data ?? []) as ReadonlyArray<QuoteRow>
+}
+
+export async function updateQuoteStatus(
+  client: SupabaseClient,
+  quoteId: number,
+  status: QuoteStatus,
+  escrowOfferId?: number
+): Promise<void> {
+  const update: Record<string, unknown> = { status }
+  if (escrowOfferId !== undefined) {
+    update.escrow_offer_id = escrowOfferId
+  }
+
+  const { error } = await client
+    .from("quotes")
+    .update(update)
+    .eq("id", quoteId)
+
+  if (error) {
+    throw new Error(`Failed to update quote: ${error.message}`)
+  }
+}
+
+export function subscribeQuotes(
+  client: SupabaseClient,
+  rfqId: number,
+  onInsert: (quote: QuoteRow) => void
+): { unsubscribe: () => void } {
+  const channel = client
+    .channel(`quotes-rfq-${rfqId}`)
+    .on(
+      "postgres_changes",
+      {
+        event: "INSERT",
+        schema: "public",
+        table: "quotes",
+        filter: `rfq_id=eq.${rfqId}`,
+      },
+      (payload) => onInsert(payload.new as QuoteRow)
+    )
+    .subscribe()
+
+  return {
+    unsubscribe: () => {
+      client.removeChannel(channel)
+    },
+  }
+}
+
+export function subscribeQuoteUpdate(
+  client: SupabaseClient,
+  quoteId: number,
+  onUpdate: (quote: QuoteRow) => void
+): { unsubscribe: () => void } {
+  const channel = client
+    .channel(`quote-update-${quoteId}`)
+    .on(
+      "postgres_changes",
+      {
+        event: "UPDATE",
+        schema: "public",
+        table: "quotes",
+        filter: `id=eq.${quoteId}`,
+      },
+      (payload) => onUpdate(payload.new as QuoteRow)
+    )
+    .subscribe()
+
+  return {
+    unsubscribe: () => {
+      client.removeChannel(channel)
+    },
+  }
+}
+
 export async function fetchHistory(
   client: SupabaseClient,
   address: string,
