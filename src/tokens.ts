@@ -31,14 +31,17 @@ export function resolveTokenAddress(
   symbol: string,
   chain: string
 ): string {
-  const upper = symbol.toUpperCase()
   const chainTokens = TOKEN_ADDRESSES[chain]
 
   if (!chainTokens) {
     throw new Error(`Unsupported chain: ${chain}. Supported: ${Object.keys(TOKEN_ADDRESSES).join(", ")}`)
   }
 
-  const address = chainTokens[upper]
+  // Case-insensitive lookup
+  const entry = Object.entries(chainTokens).find(
+    ([key]) => key.toLowerCase() === symbol.toLowerCase()
+  )
+  const address = entry ? entry[1] : undefined
 
   if (!address) {
     // If it looks like an address already, return it as-is
