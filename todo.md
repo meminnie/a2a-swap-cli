@@ -28,13 +28,17 @@ zero-otc propose --action lend  --offer 5000 USDC --rate 0.05 --duration 7d  # l
 
 ### 1. Smart Contracts
 - [x] Escrow contract — both parties deposit tokens, swap executes on mutual deposit
+- [x] Proposer deposits on propose (token lock at offer creation)
+- [x] Cancel refunds deposited tokens automatically
+- [x] Deploy to Base Sepolia testnet (Escrow: `0x969dD18434a46948CdE50D50fA71bBE286Fa036E`)
+- [x] Mock ERC20 tokens deployed (tUSDC: `0xc210208ee5Ad77FFa7E0eB0690f74a2E269d42b2`, tWETH: `0x4322cB832Ab806cC123540428125a92180725a23`)
 - [ ] ERC-8004 trust score integration — on-chain reputation check
 - [ ] Trust gating — minimum score threshold to participate in trades
-- [ ] Deploy to Base Sepolia testnet
 
 ### 2. Core CLI Commands
-- [x] `zero-otc propose` — creates on-chain offer + inserts to Supabase
-- [x] `zero-otc accept` — accepts offer + approves tokens + deposits into escrow + updates Supabase
+- [x] `zero-otc propose` — creates on-chain offer + locks tokens + inserts to Supabase
+- [x] `zero-otc accept` — accepts offer + approves tokens + deposits into escrow + auto-settles
+- [x] `zero-otc deposit` — manual deposit for either party (standalone command)
 - [x] `zero-otc list` — queries open offers from Supabase, table output
 - [x] `zero-otc history` — queries settled/cancelled trades by signer address
 - [x] `zero-otc trust` — checks ERC-8004 trust score (placeholder if registry not configured)
@@ -46,6 +50,8 @@ zero-otc propose --action lend  --offer 5000 USDC --rate 0.05 --duration 7d  # l
 - [x] `src/config.ts` — env config with trustRegistryAddress support
 - [x] `supabase/schema.sql` — offers table DDL + indexes + RLS policies
 - [x] `scripts/deploy.ts` — Hardhat deploy script
+- [x] `scripts/deploy-mocks.ts` — Mock token deploy + mint script
+- [x] `scripts/mint-to.ts` — Mint test tokens to arbitrary address
 
 ### 4. Discovery Layer (Supabase)
 - [x] `offers` table schema designed (supabase/schema.sql)
@@ -55,9 +61,9 @@ zero-otc propose --action lend  --offer 5000 USDC --rate 0.05 --duration 7d  # l
 - [ ] Realtime subscription for new offers (agent push notifications)
 
 ### 5. Remaining for Phase 1
-- [ ] Create Supabase project + run schema.sql
-- [ ] Deploy Escrow to Base Sepolia (`npx hardhat run scripts/deploy.ts --network baseSepolia`)
-- [ ] End-to-end testnet test (propose → accept → settle)
+- [x] Create Supabase project + run schema.sql
+- [x] Deploy Escrow to Base Sepolia
+- [x] End-to-end testnet test (propose → accept → settle) ✅ Verified on-chain: Offer #3 settled
 - [ ] ERC-8004 trust score contract integration
 - [ ] Trust gating on acceptOffer
 
@@ -68,7 +74,7 @@ zero-otc propose --action lend  --offer 5000 USDC --rate 0.05 --duration 7d  # l
 ## Phase 2: Hardening + RFQ
 
 ### Counterparty Griefing Mitigation
-- [ ] Offer deposit / bonding mechanism to prevent no-show attacks
+- [x] Offer deposit / bonding mechanism to prevent no-show attacks (proposer locks tokens on propose)
 - [ ] Timeout and auto-refund for stale offers
 - [ ] Reputation penalty for failed settlements
 
