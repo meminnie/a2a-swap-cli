@@ -16,8 +16,8 @@ export function registerAcceptCommand(program: Command): void {
         }
 
         const config = loadConfig()
-        const escrow = getEscrowContract(config)
         const signer = getSigner(config)
+        const escrow = getEscrowContract(config, signer)
         const supabase = getSupabaseClient(config)
         const signerAddress = await signer.getAddress()
 
@@ -26,22 +26,28 @@ export function registerAcceptCommand(program: Command): void {
           throw new Error("Offer is not open")
         }
 
+        let nonce = await signer.getNonce()
+
         console.info("Accepting offer on-chain...")
-        const acceptTx = await escrow.acceptOffer(id)
+        const acceptTx = await escrow.acceptOffer(id, { nonce: nonce++ })
         console.info(`Accept tx sent: ${acceptTx.hash}`)
         await acceptTx.wait()
 
         await updateOfferStatus(supabase, id, "accepted", signerAddress)
 
-        const buyToken = getErc20Contract(offer.buyToken, config)
+        const buyToken = getErc20Contract(offer.buyToken, config, signer)
         const buyAmount: bigint = offer.buyAmount
 
         console.info("Approving token transfer...")
-        const approveTx = await buyToken.approve(config.escrowAddress, buyAmount)
+        const approveTx = await buyToken.approve(
+          config.escrowAddress,
+          buyAmount,
+          { nonce: nonce++, gasLimit: 100_000 }
+        )
         await approveTx.wait()
 
         console.info("Depositing tokens into escrow...")
-        const depositTx = await escrow.deposit(id)
+        const depositTx = await escrow.deposit(id, { nonce: nonce++, gasLimit: 300_000 })
         console.info(`Deposit tx sent: ${depositTx.hash}`)
         await depositTx.wait()
 
