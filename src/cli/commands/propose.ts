@@ -2,7 +2,7 @@ import { Command } from "commander"
 import { ethers } from "ethers"
 import type { ActionType } from "../../types/offer"
 import { loadConfig } from "../../config"
-import { getEscrowContract, getSigner } from "../../contract"
+import { getEscrowContract, getErc20Contract, getSigner } from "../../contract"
 import { getSupabaseClient, insertOffer } from "../../supabase"
 import { resolveTokenAddress } from "../../tokens"
 
@@ -33,8 +33,8 @@ export function registerProposeCommand(program: Command): void {
         }
 
         const config = loadConfig()
-        const escrow = getEscrowContract(config)
         const signer = getSigner(config)
+        const escrow = getEscrowContract(config, signer)
         const supabase = getSupabaseClient(config)
 
         const sellTokenAddress = resolveTokenAddress(sellToken, options.chain)
@@ -44,13 +44,16 @@ export function registerProposeCommand(program: Command): void {
         const buyAmountWei = ethers.parseUnits(buyAmount, 18)
         const duration = Number(options.duration)
 
+        let nonce = await signer.getNonce()
+
         console.info("Creating on-chain offer...")
         const tx = await escrow.createOffer(
           sellTokenAddress,
           sellAmountWei,
           buyTokenAddress,
           buyAmountWei,
-          duration
+          duration,
+          { nonce: nonce++ }
         )
 
         console.info(`Transaction sent: ${tx.hash}`)
@@ -71,6 +74,21 @@ export function registerProposeCommand(program: Command): void {
         }
 
         const offerId = Number(offerCreatedEvent.args.offerId)
+
+        const sellTokenContract = getErc20Contract(sellTokenAddress, config, signer)
+
+        console.info("Approving token transfer...")
+        const approveTx = await sellTokenContract.approve(
+          config.escrowAddress,
+          sellAmountWei,
+          { nonce: nonce++, gasLimit: 100_000 }
+        )
+        await approveTx.wait()
+
+        console.info("Depositing tokens into escrow...")
+        const depositTx = await escrow.deposit(offerId, { nonce: nonce++, gasLimit: 300_000 })
+        console.info(`Deposit tx sent: ${depositTx.hash}`)
+        await depositTx.wait()
 
         await insertOffer(supabase, {
           id: offerId,
