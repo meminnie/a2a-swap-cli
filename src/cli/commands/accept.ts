@@ -1,69 +1,57 @@
 import { Command } from "commander"
 import { ethers } from "ethers"
 import { loadConfig } from "../../config"
-import { getEscrowContract, getErc20Contract, getSigner } from "../../contract"
-import { getSupabaseClient, updateOfferStatus } from "../../supabase"
+import { getSigner } from "../../contract"
+import { acceptOffer, getOffer } from "../../api"
+
+interface AcceptOptions {
+  readonly wallet?: string
+}
 
 export function registerAcceptCommand(program: Command): void {
   program
     .command("accept <offer-id>")
-    .description("Accept an open OTC offer and settle via escrow")
+    .description("Accept an open offer")
     .option("--wallet <name>", "Wallet name (loads PRIVATE_KEY_<NAME> from .env)")
-    .action(async (offerId: string, options: { readonly wallet?: string }) => {
+    .action(async (offerId: string, options: AcceptOptions) => {
       try {
-        const id = Number(offerId)
-        if (Number.isNaN(id) || id < 0) {
-          throw new Error("Invalid offer ID. Must be a non-negative number.")
-        }
-
         const config = loadConfig(options.wallet)
         const signer = getSigner(config)
-        const escrow = getEscrowContract(config, signer)
-        const supabase = getSupabaseClient(config)
-        const signerAddress = await signer.getAddress()
+        const buyerAddress = await signer.getAddress()
 
-        const offer = await escrow.getOffer(id)
-        if (Number(offer.status) !== 0) {
-          throw new Error("Offer is not open")
-        }
+        // 1. Get offer details
+        console.info(`Fetching offer #${offerId}...`)
+        const offer = await getOffer(Number(offerId))
 
-        let nonce = await signer.getNonce()
+        // 2. Accept via API → triggers contract deployment
+        console.info("Accepting offer (deploying escrow)...")
+        const result = await acceptOffer(Number(offerId), buyerAddress)
 
-        console.info("Accepting offer on-chain...")
-        const acceptTx = await escrow.acceptOffer(id, { nonce: nonce++ })
-        console.info(`Accept tx sent: ${acceptTx.hash}`)
-        await acceptTx.wait()
+        console.info(`Escrow deployed: ${result.escrowAddress}`)
+        console.info(`Deposit deadline: ${result.depositDeadline}`)
 
-        await updateOfferStatus(supabase, id, "accepted", signerAddress)
+        // 3. Transfer buy tokens to deployed escrow
+        const buyToken = offer.buy_token as string
+        const buyAmount = offer.buy_amount as string
 
-        const buyToken = getErc20Contract(offer.buyToken, config, signer)
-        const buyAmount: bigint = offer.buyAmount
-
-        console.info("Approving token transfer...")
-        const approveTx = await buyToken.approve(
-          config.escrowAddress,
-          buyAmount,
-          { nonce: nonce++, gasLimit: 100_000 }
+        const buyTokenContract = new ethers.Contract(
+          buyToken,
+          ["function transfer(address to, uint256 amount) returns (bool)"],
+          signer
         )
-        await approveTx.wait()
 
-        console.info("Depositing tokens into escrow...")
-        const depositTx = await escrow.deposit(id, { nonce: nonce++, gasLimit: 300_000 })
-        console.info(`Deposit tx sent: ${depositTx.hash}`)
-        await depositTx.wait()
+        console.info("Transferring tokens to escrow...")
+        const tx = await buyTokenContract.transfer(
+          result.escrowAddress,
+          BigInt(buyAmount)
+        )
+        await tx.wait()
 
-        const updatedOffer = await escrow.getOffer(id)
-        const settled = Number(updatedOffer.status) === 2
-
-        if (settled) {
-          await updateOfferStatus(supabase, id, "settled")
-          console.info("Swap settled successfully!")
-        } else {
-          console.info("Deposit complete. Waiting for proposer to deposit.")
-        }
-
-        console.info(`  Offer ID: ${id}`)
-        console.info(`  Tx:       ${depositTx.hash}`)
+        console.info(`Offer accepted successfully:`)
+        console.info(`  Offer ID: ${offerId}`)
+        console.info(`  Escrow:   ${result.escrowAddress}`)
+        console.info(`  Tx:       ${tx.hash}`)
+        console.info(`  Settlement will happen automatically.`)
       } catch (error) {
         const message = error instanceof Error ? error.message : "Unknown error"
         console.error(`Failed to accept offer: ${message}`)

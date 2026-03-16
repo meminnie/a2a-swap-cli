@@ -2,37 +2,40 @@
 import { Command } from "commander"
 import { registerProposeCommand } from "./commands/propose"
 import { registerAcceptCommand } from "./commands/accept"
-import { registerDepositCommand } from "./commands/deposit"
+import { registerCancelCommand } from "./commands/cancel"
 import { registerListCommand } from "./commands/list"
 import { registerHistoryCommand } from "./commands/history"
 import { registerTrustCommand } from "./commands/trust"
 import { registerWatchCommand } from "./commands/watch"
-import { registerAutoAcceptCommand } from "./commands/auto-accept"
-import { registerRefundCommand } from "./commands/refund"
 import { registerRfqCommand } from "./commands/rfq"
 import { registerQuoteCommand } from "./commands/quote"
+import { registerQuotesCommand } from "./commands/quotes"
 import { registerPickCommand } from "./commands/pick"
-import { registerClaimTimeoutCommand } from "./commands/claim-timeout"
 
 const program = new Command()
 
 program
   .name("zero-otc")
-  .description("AI agent-to-agent OTC swap CLI — P2P trades with ERC-8004 trust gating")
-  .version("0.1.0")
+  .description("AI agent-to-agent OTC swap CLI — P2P trades with reputation gating")
+  .version("2.0.0")
 
+// Swap flow
 registerProposeCommand(program)
 registerAcceptCommand(program)
-registerDepositCommand(program)
+registerCancelCommand(program)
+
+// Discovery
 registerListCommand(program)
 registerHistoryCommand(program)
-registerTrustCommand(program)
 registerWatchCommand(program)
-registerAutoAcceptCommand(program)
-registerRefundCommand(program)
+
+// RFQ flow
 registerRfqCommand(program)
 registerQuoteCommand(program)
+registerQuotesCommand(program)
 registerPickCommand(program)
-registerClaimTimeoutCommand(program)
+
+// Reputation
+registerTrustCommand(program)
 
 program.parse()

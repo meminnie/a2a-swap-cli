@@ -1,12 +1,9 @@
 import { Command } from "commander"
-import type { ActionType } from "../../types/offer"
-import { loadReadonlyConfig } from "../../config"
-import { getSupabaseClient, fetchOpenOffers } from "../../supabase"
+import { listOffers } from "../../api"
 import { getTokenSymbol } from "../../tokens"
 
 interface ListOptions {
   readonly chain: string
-  readonly action: ActionType
 }
 
 function formatTable(rows: ReadonlyArray<Record<string, unknown>>): void {
@@ -36,21 +33,19 @@ export function registerListCommand(program: Command): void {
     .command("list")
     .description("View open OTC offers")
     .option("--chain <chain>", "Filter by chain", "base-sepolia")
-    .option("--action <type>", "Filter by action type", "swap")
     .action(async (options: ListOptions) => {
       try {
-        const config = loadReadonlyConfig()
-        const supabase = getSupabaseClient(config)
-
-        console.info(`Fetching ${options.action} offers on ${options.chain}...`)
-        const offers = await fetchOpenOffers(supabase, options.chain, options.action)
+        console.info(`Fetching offers on ${options.chain}...`)
+        const offers = await listOffers(options.chain)
 
         const rows = offers.map((o) => ({
           ID: o.id,
-          Sell: `${o.sell_amount} ${getTokenSymbol(o.sell_token, options.chain) ?? o.sell_token.slice(0, 10)}`,
-          Buy: `${o.buy_amount} ${getTokenSymbol(o.buy_token, options.chain) ?? o.buy_token.slice(0, 10)}`,
-          Proposer: `${o.proposer.slice(0, 6)}...${o.proposer.slice(-4)}`,
-          Deadline: new Date(o.deadline * 1000).toISOString(),
+          Sell: `${o.sellAmount} ${getTokenSymbol(o.sellToken, options.chain) ?? o.sellToken.slice(0, 10)}`,
+          Buy: `${o.buyAmount} ${getTokenSymbol(o.buyToken, options.chain) ?? o.buyToken.slice(0, 10)}`,
+          Seller: `${o.seller.slice(0, 6)}...${o.seller.slice(-4)}`,
+          Score: o.sellerScore,
+          MinScore: o.minScore,
+          Deadline: new Date(o.deadline).toLocaleString(),
         }))
 
         formatTable(rows)
