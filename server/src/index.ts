@@ -5,6 +5,7 @@ import swagger from "@fastify/swagger"
 import swaggerUi from "@fastify/swagger-ui"
 import { loadServerConfig } from "./config"
 import { offerRoutes } from "./routes/offers"
+import { rfqRoutes } from "./routes/rfq"
 import { reputationRoutes } from "./routes/reputation"
 import { createSupabaseClient } from "./supabase"
 import { startOperatorLoop } from "./services/operator"
@@ -27,6 +28,7 @@ async function main() {
       servers: [{ url: `http://localhost:${config.port}` }],
       tags: [
         { name: "offers", description: "OTC swap offer endpoints" },
+        { name: "rfq", description: "Request for Quote endpoints" },
         { name: "reputation", description: "Wallet reputation endpoints" },
       ],
     },
@@ -38,6 +40,7 @@ async function main() {
   })
 
   await app.register(offerRoutes, { config })
+  await app.register(rfqRoutes, { config })
   await app.register(reputationRoutes, { config })
 
   // Health check
