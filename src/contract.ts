@@ -9,7 +9,7 @@ function loadEscrowAbi(): ethers.InterfaceAbi {
   return artifact.abi as ethers.InterfaceAbi
 }
 
-export function getProvider(config: Config): ethers.JsonRpcProvider {
+export function getProvider(config: Pick<Config, "rpcUrl">): ethers.JsonRpcProvider {
   return new ethers.JsonRpcProvider(config.rpcUrl)
 }
 

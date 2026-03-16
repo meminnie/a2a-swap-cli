@@ -1,6 +1,6 @@
 import { Command } from "commander"
 import type { ActionType } from "../../types/offer"
-import { loadConfig } from "../../config"
+import { loadReadonlyConfig } from "../../config"
 import { getSupabaseClient, fetchOpenOffers } from "../../supabase"
 import { getTokenSymbol } from "../../tokens"
 
@@ -39,7 +39,7 @@ export function registerListCommand(program: Command): void {
     .option("--action <type>", "Filter by action type", "swap")
     .action(async (options: ListOptions) => {
       try {
-        const config = loadConfig()
+        const config = loadReadonlyConfig()
         const supabase = getSupabaseClient(config)
 
         console.info(`Fetching ${options.action} offers on ${options.chain}...`)

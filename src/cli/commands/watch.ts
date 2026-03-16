@@ -1,5 +1,5 @@
 import { Command } from "commander"
-import { loadConfig } from "../../config"
+import { loadReadonlyConfig } from "../../config"
 import { getSupabaseClient, subscribeOffers } from "../../supabase"
 import type { OfferRow } from "../../supabase"
 import { getTokenSymbol } from "../../tokens"
@@ -20,7 +20,7 @@ export function registerWatchCommand(program: Command): void {
     .option("--chain <chain>", "Filter by chain", "base-sepolia")
     .action(async (options: { readonly chain: string }) => {
       try {
-        const config = loadConfig()
+        const config = loadReadonlyConfig()
         const supabase = getSupabaseClient(config)
 
         console.info(`Watching for new offers on ${options.chain}...`)

@@ -1,6 +1,6 @@
 import { Command } from "commander"
 import { ethers } from "ethers"
-import { loadConfig } from "../../config"
+import { loadReadonlyConfig } from "../../config"
 import { getProvider } from "../../contract"
 
 const TRUST_REGISTRY_ABI = [
@@ -18,7 +18,7 @@ export function registerTrustCommand(program: Command): void {
           throw new Error("Invalid Ethereum address")
         }
 
-        const config = loadConfig()
+        const config = loadReadonlyConfig()
 
         if (!config.trustRegistryAddress) {
           console.info(`Trust score for ${address}:`)

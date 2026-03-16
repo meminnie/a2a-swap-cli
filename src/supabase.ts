@@ -18,7 +18,7 @@ export interface OfferRow {
   readonly created_at: string
 }
 
-export function getSupabaseClient(config: Config): SupabaseClient {
+export function getSupabaseClient(config: Pick<Config, "supabaseUrl" | "supabaseAnonKey">): SupabaseClient {
   return createClient(config.supabaseUrl, config.supabaseAnonKey)
 }
 

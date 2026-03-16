@@ -9,9 +9,10 @@ export function registerHistoryCommand(program: Command): void {
     .command("history")
     .description("View past trade records")
     .option("--limit <n>", "Number of records to show", "20")
-    .action(async (options: { readonly limit: string }) => {
+    .option("--wallet <name>", "Wallet name (loads PRIVATE_KEY_<NAME> from .env)")
+    .action(async (options: { readonly limit: string; readonly wallet?: string }) => {
       try {
-        const config = loadConfig()
+        const config = loadConfig(options.wallet)
         const signer = getSigner(config)
         const supabase = getSupabaseClient(config)
         const address = await signer.getAddress()
