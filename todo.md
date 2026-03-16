@@ -57,115 +57,114 @@ Buyer  ──→ API Server ──→ Operator EOA (CREATE2 deploy + settle)
 
 ---
 
-## Phase 1: Smart Contracts
+## Phase 1: Smart Contracts ✅
 
 ### 1-1. TradeEscrow.sol (1회용 per-trade 컨트랙트)
-- [ ] 생성자: seller, buyer, sellToken, buyToken, sellAmount, buyAmount, deadline, feeBps, feeRecipient
-- [ ] settle(): 양쪽 토큰 도착 확인 → 스왑 실행 → 수수료 차감
-- [ ] refund(): 타임아웃 시 각자에게 반환
-- [ ] 이벤트: Settled, Refunded, FeeCollected
-- [ ] 최소 가스 사용 (minimal logic, no storage overhead)
+- [x] 생성자: seller, buyer, sellToken, buyToken, sellAmount, buyAmount, deadline, feeBps, feeRecipient
+- [x] settle(): 양쪽 토큰 도착 확인 → 스왑 실행 → 수수료 차감
+- [x] refund(): 타임아웃 시 각자에게 반환
+- [x] 이벤트: Settled, Refunded, FeeCollected
+- [x] 최소 가스 사용 (minimal logic, no storage overhead)
 
 ### 1-2. EscrowFactory.sol (CREATE2 배포)
-- [ ] computeAddress(): salt 기반 TradeEscrow 주소 미리 계산
-- [ ] deploy(): operator만 호출 가능 (onlyOperator)
-- [ ] salt = keccak256(seller, buyer, sellToken, buyToken, sellAmount, buyAmount, nonce)
-- [ ] feeBps, feeRecipient 설정 (owner만 변경 가능)
-- [ ] nonce 관리 (같은 조건의 거래 구분)
+- [x] computeAddress(): salt 기반 TradeEscrow 주소 미리 계산
+- [x] deploy(): operator만 호출 가능 (onlyOperator)
+- [x] salt = keccak256(seller, buyer, sellToken, buyToken, sellAmount, buyAmount, nonce)
+- [x] feeBps, feeRecipient 설정 (owner만 변경 가능)
+- [x] nonce 관리 (같은 조건의 거래 구분)
 
 ### 1-3. 테스트
-- [ ] TradeEscrow 단위 테스트 (settle, refund, fee, timeout)
-- [ ] EscrowFactory 테스트 (computeAddress 일치, deploy, operator 권한)
-- [ ] CREATE2 주소에 미리 토큰 전송 → 배포 후 settle 시나리오
-- [ ] Edge cases: 부족한 금액, 잘못된 토큰, 중복 settle
+- [x] TradeEscrow 단위 테스트 (settle, refund, fee, timeout)
+- [x] EscrowFactory 테스트 (computeAddress 일치, deploy, operator 권한)
+- [x] CREATE2 주소에 미리 토큰 전송 → 배포 후 settle 시나리오
+- [x] Edge cases: 부족한 금액, 잘못된 토큰, 중복 settle
 
 ---
 
-## Phase 2: API Server (Fastify + Swagger)
+## Phase 2: API Server (Fastify + Swagger) ✅
 
 ### 2-1. 프로젝트 셋업
-- [ ] server/ 디렉토리 생성 (monorepo 구조)
-- [ ] Fastify + TypeScript + @fastify/swagger + @fastify/swagger-ui
-- [ ] 환경변수: SUPABASE_SERVICE_ROLE_KEY, OPERATOR_PRIVATE_KEY, RPC_URL 등
-- [ ] CORS, rate limiting, error handling 미들웨어
+- [x] server/ 디렉토리 생성 (monorepo 구조)
+- [x] Fastify + TypeScript + @fastify/swagger + @fastify/swagger-ui
+- [x] 환경변수: SUPABASE_SERVICE_ROLE_KEY, OPERATOR_PRIVATE_KEY, RPC_URL 등
+- [x] CORS, rate limiting, error handling 미들웨어
 
 ### 2-2. API 엔드포인트
-- [ ] POST /offers — offer 생성 (CREATE2 주소 계산 + Supabase 저장)
-- [ ] GET /offers — open offer 목록 (seller score 포함)
-- [ ] GET /offers/:id — offer 상세 (상태, 주소, score)
-- [ ] POST /offers/:id/accept — buyer 수락 (score 검증 + 매칭)
-- [ ] POST /offers/:id/cancel — 취소 (매칭 전: free, 매칭 후: -2)
-- [ ] GET /reputation/:wallet — 점수 조회
-- [ ] GET /offers/:id/status — 거래 상태
+- [x] POST /offers — offer 생성 (CREATE2 주소 계산 + Supabase 저장)
+- [x] GET /offers — open offer 목록 (seller score 포함)
+- [x] GET /offers/:id — offer 상세 (상태, 주소, score)
+- [x] POST /offers/:id/accept — buyer 수락 (score 검증 + 매칭)
+- [x] POST /offers/:id/cancel — 취소 (매칭 전: free, 매칭 후: -2)
+- [x] GET /reputation/:wallet — 점수 조회
+- [x] POST /rfq — RFQ 생성
+- [x] POST /rfq/:id/quote — quote 제출
+- [x] GET /rfq/:id/quotes — quote 목록
+- [x] POST /rfq/:id/pick/:quoteId — quote 선택
 
 ### 2-3. Operator 자동화 (서버 내부)
-- [ ] 매칭 감지 → CREATE2 배포 (operator EOA)
-- [ ] 양쪽 입금 모니터링 (polling or event listener)
-- [ ] settle() 자동 호출
-- [ ] 타임아웃 감지 → refund() + reputation 페널티
-- [ ] 실패 시 retry 로직
+- [x] 매칭 감지 → CREATE2 배포 (operator EOA)
+- [x] 양쪽 입금 모니터링 (polling)
+- [x] settle() 자동 호출
+- [x] 타임아웃 감지 → refund() + reputation 페널티
 
 ---
 
-## Phase 3: DB 스키마 업데이트
+## Phase 3: DB 스키마 업데이트 ✅
 
 ### 3-1. offers 테이블 확장
-- [ ] computed_escrow_address TEXT
-- [ ] nonce BIGINT
-- [ ] min_score INTEGER DEFAULT 0
-- [ ] status 확장: open → matched → seller_deposited → deployed → settled / cancelled / expired
+- [x] computed_escrow_address TEXT
+- [x] nonce BIGINT
+- [x] min_score INTEGER DEFAULT 0
+- [x] status 확장: open → matched → deployed → settled / cancelled / expired
 
 ### 3-2. reputation 테이블 (신규)
-- [ ] wallet TEXT PRIMARY KEY
-- [ ] successful_swaps INTEGER DEFAULT 0
-- [ ] failed_swaps INTEGER DEFAULT 0
-- [ ] cancellations INTEGER DEFAULT 0
-- [ ] score INTEGER DEFAULT 0 (= successful_swaps - failed_swaps*3 - cancellations*2)
-- [ ] updated_at TIMESTAMPTZ
-- [ ] RLS: 읽기만 public, 쓰기는 service_role만
+- [x] wallet TEXT PRIMARY KEY
+- [x] successful_swaps, failed_swaps, cancellations, score
+- [x] RLS: 읽기만 public, 쓰기는 service_role만
 
 ### 3-3. RLS 강화
-- [ ] offers: 읽기 public, 쓰기는 service_role만
-- [ ] reputation: 읽기 public, 쓰기는 service_role만
-- [ ] anon key는 읽기 전용 (또는 제거)
+- [x] offers: 읽기 public, 쓰기는 service_role만
+- [x] reputation: 읽기 public, 쓰기는 service_role만
 
 ---
 
-## Phase 4: CLI 리팩터링
+## Phase 4: CLI 리팩터링 ✅
 
 ### 4-1. API 클라이언트 모듈
-- [ ] src/api.ts — Fastify 서버 호출 (fetch 기반)
-- [ ] 기존 Supabase 직접 호출 제거
+- [x] src/api.ts — Fastify 서버 호출 (fetch 기반)
+- [x] 기존 Supabase 직접 호출 제거 (propose, accept, list, trust, rfq, quote, pick, cancel)
 
 ### 4-2. 명령어 변경
-- [ ] propose → POST /offers + 토큰 transfer (온체인 offer 생성 제거)
-- [ ] accept → POST /offers/:id/accept + 토큰 transfer
-- [ ] list → GET /offers (score 컬럼 표시)
-- [ ] watch → WebSocket or polling /offers/:id/status
-- [ ] history → GET /offers?wallet=...&status=settled
-- [ ] trust → GET /reputation/:wallet (기존 ERC-8004 제거)
-- [ ] cancel (신규) → POST /offers/:id/cancel
+- [x] propose → POST /offers + 토큰 transfer
+- [x] accept → POST /offers/:id/accept + 토큰 transfer
+- [x] list → GET /offers (score 컬럼 표시)
+- [x] trust → GET /reputation/:wallet
+- [x] cancel → POST /offers/:id/cancel
+- [x] rfq → POST /rfq
+- [x] quote → POST /rfq/:id/quote
+- [x] pick → POST /rfq/:id/pick/:quoteId
+- [x] quotes → GET /rfq/:id/quotes
 
 ### 4-3. Score 관련
-- [ ] propose에 --min-score 옵션 추가
-- [ ] list에서 seller score 표시
-- [ ] accept 전 buyer에게 seller score 표시
+- [x] propose에 --min-score 옵션 추가
+- [x] list에서 seller score 표시
+- [x] accept 전 buyer에게 seller score 표시
 
 ---
 
-## Phase 5: SDK 리팩터링
+## Phase 5: SDK 리팩터링 ✅
 
-- [ ] ZeroOTC class → API 서버 호출로 전환
-- [ ] Supabase 직접 의존 제거
-- [ ] 기존 인터페이스 유지 (breaking change 최소화)
+- [x] ZeroOTC class → API 서버 호출로 전환
+- [x] Supabase 직접 의존 제거
+- [x] 기존 인터페이스 유지 (breaking change 최소화)
 
 ---
 
-## Phase 6: 레거시 정리
+## Phase 6: 레거시 정리 ✅
 
-- [ ] 기존 Escrow.sol — deprecated 표시, 제거하지 않음
-- [ ] 기존 Supabase anon key 사용 코드 제거
-- [ ] ERC-8004 관련 코드 제거 (trust.ts placeholder 등)
+- [x] 기존 Escrow.sol — deprecated 표시, 제거하지 않음
+- [x] 기존 v1 명령어 제거 (deposit, refund, claim-timeout, auto-accept)
+- [x] 기존 v1 SDK 모듈 제거 (sdk/swap.ts, sdk/rfq.ts)
 
 ---
 
@@ -194,3 +193,11 @@ Buyer  ──→ API Server ──→ Operator EOA (CREATE2 deploy + settle)
 | 가스비 > 수수료 (소액 거래) | Medium | 최소 수수료 $0.50 |
 | Sybil (지갑 생성 남용) | Low | 0점 시작 = 자연 방어, 추후 anti-spam deposit |
 | API 서버 다운타임 | High | 헬스체크, 자동 재시작, 매칭 상태 복구 로직 |
+
+## Remaining Follow-ups
+
+- [ ] Server tests (unit + integration)
+- [ ] EscrowFactory deploy script
+- [ ] server/.env.example template
+- [ ] history.ts / watch.ts → API 전환 (현재 read-only Supabase 직접 호출)
+- [ ] server/package-lock.json 커밋
