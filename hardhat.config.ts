@@ -9,7 +9,7 @@ const accounts = deployKey ? [deployKey] : []
 
 const config: HardhatUserConfig = {
   paths: {
-    sources: "./contracts",
+    sources: "./contracts/src",
     tests: "./contracts/test",
     cache: "./cache",
     artifacts: "./artifacts",
