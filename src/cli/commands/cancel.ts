@@ -1,7 +1,12 @@
 import { Command } from "commander"
+import { ethers } from "ethers"
 import { loadConfig } from "../../config"
 import { getSigner } from "../../contract"
-import { cancelOffer } from "../../api"
+import { cancelOffer, getOffer } from "../../api"
+
+const TRADE_ESCROW_CANCEL_ABI = [
+  "function cancel() external",
+]
 
 interface CancelOptions {
   readonly wallet?: string
@@ -17,6 +22,23 @@ export function registerCancelCommand(program: Command): void {
         const config = loadConfig(options.wallet)
         const signer = getSigner(config)
         const wallet = await signer.getAddress()
+
+        const offer = await getOffer(Number(offerId)) as {
+          readonly status?: string
+          readonly escrowAddress?: string
+        }
+
+        if (offer.status === "deployed" && offer.escrowAddress) {
+          console.info(`Cancelling on-chain (escrow at ${offer.escrowAddress})...`)
+          const escrow = new ethers.Contract(
+            offer.escrowAddress,
+            TRADE_ESCROW_CANCEL_ABI,
+            signer
+          )
+          const tx = await escrow.cancel()
+          const receipt = await tx.wait()
+          console.info(`On-chain cancel tx: ${receipt.hash}`)
+        }
 
         console.info(`Cancelling offer #${offerId}...`)
         const result = await cancelOffer(Number(offerId), wallet)

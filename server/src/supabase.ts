@@ -64,7 +64,11 @@ export async function insertOffer(
 ): Promise<OfferRow> {
   const { data, error } = await supabase
     .from("offers_v2")
-    .insert({ ...offer, status: "open", action_type: offer.action_type ?? "swap" })
+    .insert({
+      ...offer,
+      status: "open",
+      action_type: offer.action_type ?? "swap",
+    })
     .select()
     .single()
 
