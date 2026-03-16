@@ -122,6 +122,19 @@ export const cancelOfferSchema = {
   },
 }
 
+export const historySchema = {
+  description: "Get trade history for a wallet",
+  tags: ["offers"],
+  querystring: {
+    type: "object" as const,
+    required: ["wallet"],
+    properties: {
+      wallet: { type: "string" as const, description: "Wallet address" },
+      limit: { type: "integer" as const, default: 20, description: "Max records to return" },
+    },
+  },
+}
+
 export const getOfferSchema = {
   description: "Get offer details and status",
   tags: ["offers"],

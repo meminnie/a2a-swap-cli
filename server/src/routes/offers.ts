@@ -3,6 +3,7 @@ import type { ServerConfig } from "../config"
 import {
   createOfferSchema,
   listOffersSchema,
+  historySchema,
   acceptOfferSchema,
   cancelOfferSchema,
   getOfferSchema,
@@ -10,6 +11,7 @@ import {
 import {
   insertOffer,
   fetchOpenOffers,
+  fetchHistory,
   getOfferById,
   updateOfferStatus,
   getReputation,
@@ -42,6 +44,11 @@ interface OfferParams {
 
 interface ListOffersQuery {
   readonly chain?: string
+}
+
+interface HistoryQuery {
+  readonly wallet: string
+  readonly limit?: number
 }
 
 export async function offerRoutes(
@@ -133,6 +140,30 @@ export async function offerRoutes(
           }
         })
       )
+
+      return reply.send({ success: true, data: results })
+    }
+  )
+
+  app.get<{ Querystring: HistoryQuery }>(
+    "/offers/history",
+    { schema: historySchema },
+    async (request, reply) => {
+      const { wallet, limit = 20 } = request.query
+      const trades = await fetchHistory(supabase, wallet, limit)
+
+      const results = trades.map((t) => ({
+        id: t.id,
+        seller: t.seller,
+        buyer: t.buyer,
+        sellToken: t.sell_token,
+        sellAmount: t.sell_amount,
+        buyToken: t.buy_token,
+        buyAmount: t.buy_amount,
+        status: t.status,
+        chain: t.chain,
+        createdAt: t.created_at,
+      }))
 
       return reply.send({ success: true, data: results })
     }

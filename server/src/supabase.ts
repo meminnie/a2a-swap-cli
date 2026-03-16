@@ -169,6 +169,24 @@ export async function updateReputation(
   if (error) throw new Error(`Failed to update reputation: ${error.message}`)
 }
 
+export async function fetchHistory(
+  supabase: SupabaseClient,
+  wallet: string,
+  limit: number = 20
+): Promise<readonly OfferRow[]> {
+  const walletLower = wallet.toLowerCase()
+  const { data, error } = await supabase
+    .from("offers_v2")
+    .select("*")
+    .or(`seller.eq.${walletLower},buyer.eq.${walletLower}`)
+    .in("status", ["settled", "cancelled", "expired"])
+    .order("created_at", { ascending: false })
+    .limit(limit)
+
+  if (error) throw new Error(`Failed to fetch history: ${error.message}`)
+  return data as OfferRow[]
+}
+
 // --- Quotes (RFQ) ---
 
 export async function insertQuote(
