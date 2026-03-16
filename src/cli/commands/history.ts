@@ -1,7 +1,7 @@
 import { Command } from "commander"
 import { loadConfig } from "../../config"
 import { getSigner } from "../../contract"
-import { getSupabaseClient, fetchHistory } from "../../supabase"
+import { fetchHistory } from "../../api"
 import { getTokenSymbol } from "../../tokens"
 
 export function registerHistoryCommand(program: Command): void {
@@ -9,16 +9,16 @@ export function registerHistoryCommand(program: Command): void {
     .command("history")
     .description("View past trade records")
     .option("--limit <n>", "Number of records to show", "20")
+    .option("--chain <chain>", "Target chain", "base-sepolia")
     .option("--wallet <name>", "Wallet name (loads PRIVATE_KEY_<NAME> from .env)")
-    .action(async (options: { readonly limit: string; readonly wallet?: string }) => {
+    .action(async (options: { readonly limit: string; readonly chain: string; readonly wallet?: string }) => {
       try {
         const config = loadConfig(options.wallet)
         const signer = getSigner(config)
-        const supabase = getSupabaseClient(config)
         const address = await signer.getAddress()
 
         console.info(`Fetching last ${options.limit} trades for ${address.slice(0, 6)}...${address.slice(-4)}...`)
-        const trades = await fetchHistory(supabase, address, Number(options.limit))
+        const trades = await fetchHistory(address, Number(options.limit))
 
         if (trades.length === 0) {
           console.info("No trade history found.")
@@ -26,13 +26,13 @@ export function registerHistoryCommand(program: Command): void {
         }
 
         for (const t of trades) {
-          const sellSymbol = getTokenSymbol(t.sell_token, t.chain) ?? t.sell_token.slice(0, 10)
-          const buySymbol = getTokenSymbol(t.buy_token, t.chain) ?? t.buy_token.slice(0, 10)
-          const role = t.proposer.toLowerCase() === address.toLowerCase() ? "proposer" : "acceptor"
-          const date = new Date(t.created_at).toLocaleDateString()
+          const sellSymbol = getTokenSymbol(t.sellToken, options.chain) ?? t.sellToken.slice(0, 10)
+          const buySymbol = getTokenSymbol(t.buyToken, options.chain) ?? t.buyToken.slice(0, 10)
+          const role = t.seller.toLowerCase() === address.toLowerCase() ? "seller" : "buyer"
+          const date = new Date(t.createdAt).toLocaleDateString()
 
           console.info(
-            `  #${t.id} [${t.status.toUpperCase()}] ${t.sell_amount} ${sellSymbol} -> ${t.buy_amount} ${buySymbol} (${role}) ${date}`
+            `  #${t.id} [${t.status.toUpperCase()}] ${t.sellAmount} ${sellSymbol} -> ${t.buyAmount} ${buySymbol} (${role}) ${date}`
           )
         }
 

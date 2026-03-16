@@ -104,6 +104,30 @@ export async function cancelOffer(
   })
 }
 
+// --- History ---
+
+export interface HistoryItem {
+  readonly id: number
+  readonly seller: string
+  readonly buyer: string | null
+  readonly sellToken: string
+  readonly sellAmount: string
+  readonly buyToken: string
+  readonly buyAmount: string
+  readonly status: string
+  readonly chain: string
+  readonly createdAt: string
+}
+
+export async function fetchHistory(
+  wallet: string,
+  limit: number = 20
+): Promise<readonly HistoryItem[]> {
+  return request<readonly HistoryItem[]>(
+    `/offers/history?wallet=${wallet}&limit=${limit}`
+  )
+}
+
 // --- Reputation ---
 
 export interface ReputationResult {

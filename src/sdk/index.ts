@@ -7,6 +7,7 @@ export type {
   ReputationResult,
   CreateRfqResult,
   QuoteListItem,
+  HistoryItem,
 } from "../api"
 
 export interface ZeroOTCConfig {
@@ -94,6 +95,15 @@ export class ZeroOTC {
     quoteId: number
   ): Promise<api.AcceptOfferResult> {
     return api.pickQuote(rfqId, quoteId)
+  }
+
+  // ── History ──
+
+  async getHistory(
+    wallet: string,
+    limit?: number
+  ): Promise<readonly api.HistoryItem[]> {
+    return api.fetchHistory(wallet, limit)
   }
 
   // ── Reputation ──

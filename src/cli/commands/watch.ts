@@ -1,46 +1,49 @@
 import { Command } from "commander"
-import { loadReadonlyConfig } from "../../config"
-import { getSupabaseClient, subscribeOffers } from "../../supabase"
-import type { OfferRow } from "../../supabase"
+import { listOffers } from "../../api"
+import type { OfferListItem } from "../../api"
 import { getTokenSymbol } from "../../tokens"
 
-function formatOffer(offer: OfferRow, chain: string): string {
-  const sellSymbol = getTokenSymbol(offer.sell_token, chain) ?? offer.sell_token.slice(0, 10)
-  const buySymbol = getTokenSymbol(offer.buy_token, chain) ?? offer.buy_token.slice(0, 10)
-  const proposer = `${offer.proposer.slice(0, 6)}...${offer.proposer.slice(-4)}`
+function formatOffer(offer: OfferListItem, chain: string): string {
+  const sellSymbol = getTokenSymbol(offer.sellToken, chain) ?? offer.sellToken.slice(0, 10)
+  const buySymbol = getTokenSymbol(offer.buyToken, chain) ?? offer.buyToken.slice(0, 10)
+  const seller = `${offer.seller.slice(0, 6)}...${offer.seller.slice(-4)}`
   const time = new Date().toLocaleTimeString()
 
-  return `[${time}] #${offer.id} | ${offer.sell_amount} ${sellSymbol} -> ${offer.buy_amount} ${buySymbol} | ${proposer}`
+  return `[${time}] #${offer.id} | ${offer.sellAmount} ${sellSymbol} -> ${offer.buyAmount} ${buySymbol} | ${seller} (score: ${offer.sellerScore})`
 }
 
 export function registerWatchCommand(program: Command): void {
   program
     .command("watch")
-    .description("Watch for new offers in realtime")
+    .description("Watch for new offers (polls API every 10s)")
     .option("--chain <chain>", "Filter by chain", "base-sepolia")
-    .action(async (options: { readonly chain: string }) => {
+    .option("--interval <seconds>", "Poll interval in seconds", "10")
+    .action(async (options: { readonly chain: string; readonly interval: string }) => {
       try {
-        const config = loadReadonlyConfig()
-        const supabase = getSupabaseClient(config)
+        const intervalMs = Number(options.interval) * 1000
+        const seenIds = new Set<number>()
 
-        console.info(`Watching for new offers on ${options.chain}...`)
+        console.info(`Watching for new offers on ${options.chain} (polling every ${options.interval}s)...`)
         console.info("Press Ctrl+C to stop.\n")
 
-        subscribeOffers(
-          supabase,
-          (offer) => {
-            if (offer.chain === options.chain) {
-              console.info(`NEW  ${formatOffer(offer, options.chain)}`)
-            }
-          },
-          (offer) => {
-            if (offer.chain === options.chain) {
-              const status = offer.status.toUpperCase()
-              console.info(`${status.padEnd(4)} ${formatOffer(offer, options.chain)}`)
-            }
-          }
-        )
+        const poll = async (): Promise<void> => {
+          try {
+            const offers = await listOffers(options.chain)
 
+            for (const offer of offers) {
+              if (!seenIds.has(offer.id)) {
+                seenIds.add(offer.id)
+                console.info(`NEW  ${formatOffer(offer, options.chain)}`)
+              }
+            }
+          } catch (err) {
+            const message = err instanceof Error ? err.message : "Unknown error"
+            console.error(`Poll error: ${message}`)
+          }
+        }
+
+        await poll()
+        setInterval(poll, intervalMs)
         await new Promise(() => {})
       } catch (error) {
         const message = error instanceof Error ? error.message : "Unknown error"
