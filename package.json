@@ -1,7 +1,7 @@
 {
   "name": "a2a-cli",
-  "version": "1.0.0",
-  "description": "AI agent-to-agent OTC swap CLI with ERC-8004 trust gating",
+  "version": "2.0.0",
+  "description": "AI agent-to-agent OTC swap CLI with CREATE2 escrow and reputation",
   "main": "dist/src/sdk/index.js",
   "types": "dist/src/sdk/index.d.ts",
   "bin": {
@@ -12,9 +12,7 @@
       "types": "./dist/src/sdk/index.d.ts",
       "default": "./dist/src/sdk/index.js"
     },
-    "./cli": "./dist/src/cli/index.js",
-    "./eliza": "./dist/src/integrations/eliza/index.js",
-    "./virtuals": "./dist/src/integrations/virtuals/index.js"
+    "./cli": "./dist/src/cli/index.js"
   },
   "scripts": {
     "build": "hardhat compile && tsc",
@@ -42,17 +40,8 @@
     "ts-node": "^10.9.2",
     "typescript": "^5.9.3"
   },
-  "peerDependencies": {
-    "@elizaos/core": ">=0.1.0",
-    "@virtuals-protocol/game": ">=1.0.0"
-  },
-  "peerDependenciesMeta": {
-    "@elizaos/core": { "optional": true },
-    "@virtuals-protocol/game": { "optional": true }
-  },
   "dependencies": {
     "@openzeppelin/contracts": "^5.6.1",
-    "@supabase/supabase-js": "^2.99.1",
     "commander": "^14.0.3",
     "dotenv": "^17.3.1",
     "ethers": "^6.16.0"
