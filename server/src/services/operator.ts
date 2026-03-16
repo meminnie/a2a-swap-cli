@@ -10,6 +10,8 @@ export async function trySettle(
   offer: OfferRow
 ): Promise<boolean> {
   try {
+    if (!offer.escrow_address) return false
+
     const sellBalance = await checkTokenBalance(
       config,
       offer.sell_token,
@@ -49,6 +51,8 @@ export async function tryRefund(
   offer: OfferRow
 ): Promise<boolean> {
   try {
+    if (!offer.escrow_address) return false
+
     const txHash = await refundEscrow(config, offer.escrow_address)
 
     await updateOfferStatus(supabase, offer.id, "expired", { tx_hash: txHash })

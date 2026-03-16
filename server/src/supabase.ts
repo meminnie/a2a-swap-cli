@@ -9,13 +9,27 @@ export interface OfferRow {
   readonly sell_amount: string
   readonly buy_token: string
   readonly buy_amount: string
+  readonly action_type: string
   readonly chain: string
   readonly status: string
-  readonly escrow_address: string
-  readonly nonce: number
+  readonly escrow_address: string | null
+  readonly nonce: number | null
   readonly deadline: string
   readonly min_score: number
   readonly tx_hash: string | null
+  readonly created_at: string
+}
+
+export interface QuoteRow {
+  readonly id: number
+  readonly rfq_id: number
+  readonly quoter: string
+  readonly sell_token: string
+  readonly sell_amount: string
+  readonly buy_token: string
+  readonly buy_amount: string
+  readonly chain: string
+  readonly status: string
   readonly created_at: string
 }
 
@@ -40,16 +54,17 @@ export async function insertOffer(
     readonly sell_amount: string
     readonly buy_token: string
     readonly buy_amount: string
+    readonly action_type?: string
     readonly chain: string
-    readonly escrow_address: string
-    readonly nonce: number
+    readonly escrow_address?: string
+    readonly nonce?: number
     readonly deadline: string
     readonly min_score: number
   }
 ): Promise<OfferRow> {
   const { data, error } = await supabase
     .from("offers_v2")
-    .insert({ ...offer, status: "open" })
+    .insert({ ...offer, status: "open", action_type: offer.action_type ?? "swap" })
     .select()
     .single()
 
@@ -59,12 +74,14 @@ export async function insertOffer(
 
 export async function fetchOpenOffers(
   supabase: SupabaseClient,
-  chain: string
+  chain: string,
+  actionType: string = "swap"
 ): Promise<readonly OfferRow[]> {
   const { data, error } = await supabase
     .from("offers_v2")
     .select("*")
     .eq("chain", chain)
+    .eq("action_type", actionType)
     .eq("status", "open")
     .order("created_at", { ascending: false })
 
@@ -150,4 +167,84 @@ export async function updateReputation(
     })
 
   if (error) throw new Error(`Failed to update reputation: ${error.message}`)
+}
+
+// --- Quotes (RFQ) ---
+
+export async function insertQuote(
+  supabase: SupabaseClient,
+  quote: {
+    readonly rfq_id: number
+    readonly quoter: string
+    readonly sell_token: string
+    readonly sell_amount: string
+    readonly buy_token: string
+    readonly buy_amount: string
+    readonly chain: string
+  }
+): Promise<QuoteRow> {
+  const { data, error } = await supabase
+    .from("quotes_v2")
+    .insert({ ...quote, status: "pending" })
+    .select()
+    .single()
+
+  if (error) throw new Error(`Failed to insert quote: ${error.message}`)
+  return data as QuoteRow
+}
+
+export async function fetchQuotesForRfq(
+  supabase: SupabaseClient,
+  rfqId: number
+): Promise<readonly QuoteRow[]> {
+  const { data, error } = await supabase
+    .from("quotes_v2")
+    .select("*")
+    .eq("rfq_id", rfqId)
+    .order("created_at", { ascending: false })
+
+  if (error) throw new Error(`Failed to fetch quotes: ${error.message}`)
+  return data as QuoteRow[]
+}
+
+export async function getQuoteById(
+  supabase: SupabaseClient,
+  id: number
+): Promise<QuoteRow | null> {
+  const { data, error } = await supabase
+    .from("quotes_v2")
+    .select("*")
+    .eq("id", id)
+    .single()
+
+  if (error) return null
+  return data as QuoteRow
+}
+
+export async function updateQuoteStatus(
+  supabase: SupabaseClient,
+  id: number,
+  status: string
+): Promise<void> {
+  const { error } = await supabase
+    .from("quotes_v2")
+    .update({ status })
+    .eq("id", id)
+
+  if (error) throw new Error(`Failed to update quote: ${error.message}`)
+}
+
+export async function rejectOtherQuotes(
+  supabase: SupabaseClient,
+  rfqId: number,
+  acceptedQuoteId: number
+): Promise<void> {
+  const { error } = await supabase
+    .from("quotes_v2")
+    .update({ status: "rejected" })
+    .eq("rfq_id", rfqId)
+    .eq("status", "pending")
+    .neq("id", acceptedQuoteId)
+
+  if (error) throw new Error(`Failed to reject quotes: ${error.message}`)
 }

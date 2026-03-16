@@ -207,7 +207,7 @@ export async function offerRoutes(
         sellAmount: BigInt(offer.sell_amount),
         buyAmount: BigInt(offer.buy_amount),
         deadline,
-        nonce: BigInt(offer.nonce),
+        nonce: BigInt(offer.nonce ?? 0),
       }
 
       try {
