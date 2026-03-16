@@ -1,144 +1,196 @@
-# zero-otc: AI Agent-to-Agent OTC Swap CLI
+# zero-otc v2: CREATE2 Escrow + API Server + Reputation
 
 ## Overview
 
-CLI tool for AI agent P2P OTC swaps on Base chain, gated by ERC-8004 reputation scores.
-No DEX routing — no slippage, no MEV. Agents call it programmatically, humans use it directly.
+P2P OTC swap platform for AI agents on Base chain.
+- **오프체인 매칭** (Supabase) → **CREATE2 per-trade escrow** 배포
+- **API 서버** (Fastify + Swagger) — CLI/SDK가 직접 Supabase 접근하지 않음
+- **자체 Reputation 시스템** — 0점 시작, 실적 기반
+- **Operator가 gasless 배포** — 유저는 토큰 transfer만
 
 ## Stack
 
-- **Contracts**: Hardhat + Solidity (shared TypeScript toolchain with CLI)
-- **CLI**: Node.js / TypeScript (Commander.js)
-- **Discovery**: Supabase (offers DB + realtime subscriptions)
-- **Settlement**: On-chain Escrow contract
-- **Chain**: Base (testnet first, then mainnet)
+- **Contracts**: Solidity (Hardhat) — EscrowFactory + TradeEscrow (CREATE2)
+- **API Server**: Node.js / Fastify + @fastify/swagger
+- **DB**: Supabase (PostgreSQL) — service_role key로 서버에서만 접근
+- **CLI**: Commander.js → API 호출로 전환
+- **SDK**: ZeroOTC class → API 호출로 전환
+- **Chain**: Base Sepolia → Mainnet
 
-## Architecture Decision
-
-- Use an `actionType` field in the offer schema from day one. MVP only implements `swap`, but the data model supports future primitives (rfq, lend, hedge, bridge) without rewriting.
-- **Hybrid architecture**: Escrow contract handles settlement (돈), Supabase handles discovery (오퍼 조회/실시간 알림). Framework-agnostic — 어떤 agent framework이든 HTTP/SDK로 연결 가능.
+## Architecture
 
 ```
-zero-otc propose --action swap  --sell "1000 USDC" --buy "0.5 ETH"
-zero-otc propose --action rfq   --need "0.5 ETH" --budget "1000 USDC"       # later
-zero-otc propose --action lend  --offer "5000 USDC" --rate 0.05 --duration 7d  # later
+Seller ──→ API Server ──→ Supabase (offers, reputation)
+Buyer  ──→ API Server ──→ Operator EOA (CREATE2 deploy + settle)
+                     ──→ Base chain (TradeEscrow contracts)
 ```
 
-## Phase 1: MVP (Base chain, same-chain, escrow, swap only)
+### 전체 플로우
 
-### 1. Smart Contracts
-- [x] Escrow contract — both parties deposit tokens, swap executes on mutual deposit
-- [x] Proposer deposits on propose (token lock at offer creation)
-- [x] Cancel refunds deposited tokens automatically
-- [x] Deploy to Base Sepolia testnet (Escrow: `0x969dD18434a46948CdE50D50fA71bBE286Fa036E`)
-- [x] Mock ERC20 tokens deployed (tUSDC: `0xc210208ee5Ad77FFa7E0eB0690f74a2E269d42b2`, tWETH: `0x4322cB832Ab806cC123540428125a92180725a23`)
-- [ ] ERC-8004 trust score integration — on-chain reputation check
-- [ ] Trust gating — minimum score threshold to participate in trades
+```
+1. Seller → POST /offers { sellToken, sellAmount, buyToken, buyAmount, minScore? }
+   ← { offerId, escrowAddress (CREATE2 계산), deadline }
+   → Seller가 escrowAddress로 sellToken transfer
 
-### 2. Core CLI Commands
-- [x] `zero-otc propose` — creates on-chain offer + locks tokens + inserts to Supabase
-- [x] `zero-otc accept` — accepts offer + approves tokens + deposits into escrow + auto-settles
-- [x] `zero-otc deposit` — manual deposit for either party (standalone command)
-- [x] `zero-otc list` — queries open offers from Supabase, table output
-- [x] `zero-otc history` — queries settled/cancelled trades by signer address
-- [x] `zero-otc trust` — checks ERC-8004 trust score (placeholder if registry not configured)
-- [x] `zero-otc watch` — realtime offer monitoring via Supabase Realtime
-- [x] `zero-otc auto-accept` — automated offer evaluation + accept via oracle price policy
-- [x] `--wallet <name>` option — multi-wallet support (loads `PRIVATE_KEY_<NAME>` from .env)
+2. Buyer → GET /offers (seller score 표시, buyer score < minScore면 accept 불가)
+   → POST /offers/:id/accept { buyerAddress }
 
-### 3. Infrastructure Modules
-- [x] `src/contract.ts` — ethers provider/signer/escrow/erc20 contract factory (shared signer support)
-- [x] `src/supabase.ts` — Supabase client + CRUD (insert, update, fetchOpen, fetchHistory, subscribeOffers)
-- [x] `src/tokens.ts` — token symbol ↔ address mapping (Base Sepolia + Mainnet: USDC, WETH, DAI, tUSDC, tWETH)
-- [x] `src/config.ts` — env config with multi-wallet + trustRegistryAddress support
-- [x] `src/oracle.ts` — CoinGecko price oracle (token price + pair rate)
-- [x] `src/policy.ts` — auto-accept policy engine (USD value comparison + slippage threshold)
-- [x] `supabase/schema.sql` — offers table DDL + indexes + RLS policies
-- [x] `scripts/deploy.ts` — Hardhat deploy script
-- [x] `scripts/deploy-mocks.ts` — Mock token deploy + mint script
-- [x] `scripts/mint-to.ts` — Mint test tokens to arbitrary address
+3. Operator (서버): 매칭 감지
+   → TradeEscrow 배포 (CREATE2, 우리 gas)
+   → Buyer에게 deposit 주소 + deadline 응답
 
-### 4. Discovery Layer (Supabase)
-- [x] `offers` table schema designed (supabase/schema.sql)
-- [x] Supabase client module (`src/supabase.ts`)
-- [x] Insert offer on propose (mirror on-chain data)
-- [x] Update offer status on accept/settle
-- [x] Realtime subscription for new offers (`watch` command + `subscribeOffers` SDK)
+4. Buyer → 컨트랙트에 buyToken transfer
 
-### 5. Remaining for Phase 1
-- [x] Create Supabase project + run schema.sql
-- [x] Deploy Escrow to Base Sepolia
-- [x] End-to-end testnet test (propose → accept → settle) ✅ Verified on-chain: Offer #3 settled
-- [x] Auto-accept policy engine with CoinGecko oracle ✅ Verified: correct REJECT on bad deals, ACCEPT on fair deals
-- [ ] ERC-8004 trust score contract integration (deferred — mock registry on testnet, real on mainnet)
-- [ ] Trust gating on acceptOffer
+5. Operator (서버): 양쪽 입금 확인
+   → settle() 호출 (우리 gas)
+   → 수수료 차감 (양쪽 0.1%, 최소 $0.50)
+   → reputation +1 양쪽
 
-### 6. Agent Automation
-- [x] Auto-accept policy engine (oracle price threshold)
-- [x] `auto-accept` command with `--max-slippage`, `--dry-run`, `--wallet` options
-- [ ] Trust score integration in policy (when ERC-8004 registry is ready)
-- [x] Multi-token policy rules — per-pair slippage config via `--policy-file` JSON + `resolveSlippage()`
+6. Timeout: Buyer 미입금
+   → refund() → Seller 토큰 반환
+   → Buyer reputation -3
 
-## Phase 2: Hardening + RFQ
+7. Cancel: 매칭 후 취소
+   → 취소한 쪽 reputation -2
+   → 상대방 토큰 반환
+```
 
-### Counterparty Griefing Mitigation
-- [x] Offer deposit / bonding mechanism to prevent no-show attacks (proposer locks tokens on propose)
-- [x] Timeout and auto-refund for stale offers (`refund` command + contract handles Open & Accepted status)
-- [ ] Reputation penalty for failed settlements
+---
 
-### Settlement Robustness
-- [x] Handle partial failures — deposit window (15min) + `claimDepositTimeout()` prevents fund locking
-- [ ] Two-phase commit or HTLC option for trustless settlement
-- [x] Gas optimization — struct packing (8→6 storage slots, ~25% gas savings), `uint48` deadline, gasLimit overrides
+## Phase 1: Smart Contracts
 
-### RFQ Primitive
-- [x] `zero-otc rfq` — broadcast "I need X, budget Y", get competing quotes
-- [x] `zero-otc quote <rfq-id> --offer "amount token"` — submit quote for an RFQ
-- [x] `zero-otc pick <rfq-id> <quote-id>` — pick best quote, create on-chain escrow
-- [x] Quote auto-accept — quoter auto-accepts escrow when their quote is picked (via Supabase Realtime)
-- [x] Supabase `quotes` table + realtime subscriptions
-- [x] End-to-end verified: RFQ → Quote → Pick → Auto-settle ✅
+### 1-1. TradeEscrow.sol (1회용 per-trade 컨트랙트)
+- [ ] 생성자: seller, buyer, sellToken, buyToken, sellAmount, buyAmount, deadline, feeBps, feeRecipient
+- [ ] settle(): 양쪽 토큰 도착 확인 → 스왑 실행 → 수수료 차감
+- [ ] refund(): 타임아웃 시 각자에게 반환
+- [ ] 이벤트: Settled, Refunded, FeeCollected
+- [ ] 최소 가스 사용 (minimal logic, no storage overhead)
 
-### Security
-- [ ] Smart contract audit
-- [x] Input validation on all CLI parameters (amount > 0, duration > 0 and <= 30 days, valid action type)
-- [x] Contract-level validation (zero amounts, same token, duration limits — custom errors)
-- [x] No hardcoded secrets — env-based config (done: src/config.ts)
+### 1-2. EscrowFactory.sol (CREATE2 배포)
+- [ ] computeAddress(): salt 기반 TradeEscrow 주소 미리 계산
+- [ ] deploy(): operator만 호출 가능 (onlyOperator)
+- [ ] salt = keccak256(seller, buyer, sellToken, buyToken, sellAmount, buyAmount, nonce)
+- [ ] feeBps, feeRecipient 설정 (owner만 변경 가능)
+- [ ] nonce 관리 (같은 조건의 거래 구분)
 
-## Phase 3: Distribution & Growth
+### 1-3. 테스트
+- [ ] TradeEscrow 단위 테스트 (settle, refund, fee, timeout)
+- [ ] EscrowFactory 테스트 (computeAddress 일치, deploy, operator 권한)
+- [ ] CREATE2 주소에 미리 토큰 전송 → 배포 후 settle 시나리오
+- [ ] Edge cases: 부족한 금액, 잘못된 토큰, 중복 settle
 
-### Agent Ecosystem Integration
-- [x] SDK / API wrapper for programmatic access (`src/sdk/` — ZeroOTC client class)
-- [x] Agent framework integrations — Eliza plugin (`src/integrations/eliza/`) + Virtuals GAME worker (`src/integrations/virtuals/`)
-- [ ] Agent tool registry listing
-- [ ] Agent marketplace discovery
+---
 
-### Liquidity Cold Start
-- [ ] Seed initial liquidity with known agents
-- [ ] Incentive mechanism for early market makers
+## Phase 2: API Server (Fastify + Swagger)
 
-### Future Primitives
-- [ ] `--action lend` — short-term lending between agents
-- [ ] `--action hedge` — OTC options/forwards
-- [ ] `--action bridge` — cross-chain liquidity requests (HTLC atomic swaps)
+### 2-1. 프로젝트 셋업
+- [ ] server/ 디렉토리 생성 (monorepo 구조)
+- [ ] Fastify + TypeScript + @fastify/swagger + @fastify/swagger-ui
+- [ ] 환경변수: SUPABASE_SERVICE_ROLE_KEY, OPERATOR_PRIVATE_KEY, RPC_URL 등
+- [ ] CORS, rate limiting, error handling 미들웨어
+
+### 2-2. API 엔드포인트
+- [ ] POST /offers — offer 생성 (CREATE2 주소 계산 + Supabase 저장)
+- [ ] GET /offers — open offer 목록 (seller score 포함)
+- [ ] GET /offers/:id — offer 상세 (상태, 주소, score)
+- [ ] POST /offers/:id/accept — buyer 수락 (score 검증 + 매칭)
+- [ ] POST /offers/:id/cancel — 취소 (매칭 전: free, 매칭 후: -2)
+- [ ] GET /reputation/:wallet — 점수 조회
+- [ ] GET /offers/:id/status — 거래 상태
+
+### 2-3. Operator 자동화 (서버 내부)
+- [ ] 매칭 감지 → CREATE2 배포 (operator EOA)
+- [ ] 양쪽 입금 모니터링 (polling or event listener)
+- [ ] settle() 자동 호출
+- [ ] 타임아웃 감지 → refund() + reputation 페널티
+- [ ] 실패 시 retry 로직
+
+---
+
+## Phase 3: DB 스키마 업데이트
+
+### 3-1. offers 테이블 확장
+- [ ] computed_escrow_address TEXT
+- [ ] nonce BIGINT
+- [ ] min_score INTEGER DEFAULT 0
+- [ ] status 확장: open → matched → seller_deposited → deployed → settled / cancelled / expired
+
+### 3-2. reputation 테이블 (신규)
+- [ ] wallet TEXT PRIMARY KEY
+- [ ] successful_swaps INTEGER DEFAULT 0
+- [ ] failed_swaps INTEGER DEFAULT 0
+- [ ] cancellations INTEGER DEFAULT 0
+- [ ] score INTEGER DEFAULT 0 (= successful_swaps - failed_swaps*3 - cancellations*2)
+- [ ] updated_at TIMESTAMPTZ
+- [ ] RLS: 읽기만 public, 쓰기는 service_role만
+
+### 3-3. RLS 강화
+- [ ] offers: 읽기 public, 쓰기는 service_role만
+- [ ] reputation: 읽기 public, 쓰기는 service_role만
+- [ ] anon key는 읽기 전용 (또는 제거)
+
+---
+
+## Phase 4: CLI 리팩터링
+
+### 4-1. API 클라이언트 모듈
+- [ ] src/api.ts — Fastify 서버 호출 (fetch 기반)
+- [ ] 기존 Supabase 직접 호출 제거
+
+### 4-2. 명령어 변경
+- [ ] propose → POST /offers + 토큰 transfer (온체인 offer 생성 제거)
+- [ ] accept → POST /offers/:id/accept + 토큰 transfer
+- [ ] list → GET /offers (score 컬럼 표시)
+- [ ] watch → WebSocket or polling /offers/:id/status
+- [ ] history → GET /offers?wallet=...&status=settled
+- [ ] trust → GET /reputation/:wallet (기존 ERC-8004 제거)
+- [ ] cancel (신규) → POST /offers/:id/cancel
+
+### 4-3. Score 관련
+- [ ] propose에 --min-score 옵션 추가
+- [ ] list에서 seller score 표시
+- [ ] accept 전 buyer에게 seller score 표시
+
+---
+
+## Phase 5: SDK 리팩터링
+
+- [ ] ZeroOTC class → API 서버 호출로 전환
+- [ ] Supabase 직접 의존 제거
+- [ ] 기존 인터페이스 유지 (breaking change 최소화)
+
+---
+
+## Phase 6: 레거시 정리
+
+- [ ] 기존 Escrow.sol — deprecated 표시, 제거하지 않음
+- [ ] 기존 Supabase anon key 사용 코드 제거
+- [ ] ERC-8004 관련 코드 제거 (trust.ts placeholder 등)
+
+---
+
+## 수수료 정책
+
+- 양쪽 0.1% (10 BPS)
+- 최소 수수료 $0.50 (oracle 가격 기준)
+- feeRecipient: operator EOA (또는 별도 지갑)
+- owner가 feeBps, feeRecipient 변경 가능
+
+## Reputation 정책
+
+- 시작 점수: 0
+- 스왑 완료: +1 (양쪽)
+- Buyer 미입금 타임아웃: -3 (buyer)
+- 매칭 후 취소: -2 (취소한 쪽)
+- score = successful_swaps - (failed_swaps * 3) - (cancellations * 2)
+- 초반에는 표시만, 나중에 --min-score 필터로 gate
 
 ## Key Risks
 
 | Risk | Severity | Mitigation |
 |------|----------|------------|
-| Liquidity cold start | High | Seed liquidity, RFQ mode, incentives |
-| Agent distribution / discovery | High | SDK, tool registries, agent marketplaces |
-| Counterparty griefing | Medium | Bonding, escrow deposits, reputation penalties |
-| Settlement fund locking | Medium | Timeouts, two-phase commit, HTLC |
-| Competition (AirSwap, 0x, CoW) | Medium | Differentiate via ERC-8004 trust + agent-native UX |
-| Regulatory (broker/exchange classification) | Low-Medium | Legal review at scale |
-
-## Competitive Edge
-
-- ERC-8004 on-chain reputation = trust layer competitors lack
-- Agent-native interface (CLI/SDK) vs human-oriented UIs
-- P2P = zero slippage, zero MEV for large trades
-
-## Long-term Vision
-
-Reposition from "OTC swap CLI" → **AI agent liquidity routing layer / agent execution network** where OTC is one primitive among many (swap, lend, bridge, hedge).
+| CREATE2 주소로 잘못된 토큰 전송 | High | 서버에서 토큰 주소 + 금액 검증 후 매칭 |
+| Operator key 유출 | Critical | HSM / KMS, 최소 권한, 모니터링 |
+| 가스비 > 수수료 (소액 거래) | Medium | 최소 수수료 $0.50 |
+| Sybil (지갑 생성 남용) | Low | 0점 시작 = 자연 방어, 추후 anti-spam deposit |
+| API 서버 다운타임 | High | 헬스체크, 자동 재시작, 매칭 상태 복구 로직 |
