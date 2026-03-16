@@ -220,8 +220,6 @@ export async function rfqRoutes(
         buyer,
         sellToken: quote.sell_token,
         buyToken: quote.buy_token,
-        sellAmount: BigInt(quote.sell_amount),
-        buyAmount: BigInt(quote.buy_amount),
         deadline,
         nonce,
       }

@@ -1,6 +1,11 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
 import type { ServerConfig } from "../config"
-import { settleEscrow, refundEscrow, checkTokenBalance } from "../contract"
+import {
+  settleEscrow,
+  refundEscrow,
+  isEscrowCancelled,
+  checkTokenBalance,
+} from "../contract"
 import { updateOfferStatus, updateReputation } from "../supabase"
 import type { OfferRow } from "../supabase"
 
@@ -26,7 +31,12 @@ export async function trySettle(
     if (sellBalance < BigInt(offer.sell_amount)) return false
     if (buyBalance < BigInt(offer.buy_amount)) return false
 
-    const txHash = await settleEscrow(config, offer.escrow_address)
+    const txHash = await settleEscrow(
+      config,
+      offer.escrow_address,
+      BigInt(offer.sell_amount),
+      BigInt(offer.buy_amount)
+    )
 
     await updateOfferStatus(supabase, offer.id, "settled", { tx_hash: txHash })
 
@@ -88,13 +98,30 @@ export function startOperatorLoop(
 
       if (deployedOffers) {
         for (const offer of deployedOffers) {
+          const typedOffer = offer as OfferRow
+
+          // Check if escrow was cancelled on-chain by user
+          if (typedOffer.escrow_address) {
+            try {
+              const wasCancelled = await isEscrowCancelled(config, typedOffer.escrow_address)
+              if (wasCancelled) {
+                await updateOfferStatus(supabase, typedOffer.id, "cancelled")
+                await updateReputation(supabase, typedOffer.seller, { cancellations_delta: 1 })
+                console.info(`[operator] Detected on-chain cancel for offer #${typedOffer.id}`)
+                continue
+              }
+            } catch {
+              // Call failed, continue normal flow
+            }
+          }
+
           const now = new Date()
-          const deadline = new Date(offer.deadline)
+          const deadline = new Date(typedOffer.deadline)
 
           if (now > deadline) {
-            await tryRefund(config, supabase, offer as OfferRow)
+            await tryRefund(config, supabase, typedOffer)
           } else {
-            await trySettle(config, supabase, offer as OfferRow)
+            await trySettle(config, supabase, typedOffer)
           }
         }
       }

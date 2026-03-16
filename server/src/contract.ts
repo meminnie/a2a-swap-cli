@@ -6,7 +6,7 @@ import type { ServerConfig } from "./config"
 function loadAbi(contractName: string): ethers.InterfaceAbi {
   const artifactPath = path.resolve(
     __dirname,
-    `../../artifacts/contracts/${contractName}.sol/${contractName}.json`
+    `../../artifacts/contracts/src/${contractName}.sol/${contractName}.json`
   )
   const artifact = JSON.parse(fs.readFileSync(artifactPath, "utf-8"))
   return artifact.abi as ethers.InterfaceAbi
@@ -43,8 +43,6 @@ export async function computeEscrowAddress(
     readonly buyer: string
     readonly sellToken: string
     readonly buyToken: string
-    readonly sellAmount: bigint
-    readonly buyAmount: bigint
     readonly deadline: number
     readonly nonce: bigint
   }
@@ -55,8 +53,6 @@ export async function computeEscrowAddress(
     params.buyer,
     params.sellToken,
     params.buyToken,
-    params.sellAmount,
-    params.buyAmount,
     params.deadline,
     params.nonce
   )
@@ -70,8 +66,6 @@ export async function deployEscrow(
     readonly buyer: string
     readonly sellToken: string
     readonly buyToken: string
-    readonly sellAmount: bigint
-    readonly buyAmount: bigint
     readonly deadline: number
     readonly nonce: bigint
   }
@@ -82,8 +76,6 @@ export async function deployEscrow(
     params.buyer,
     params.sellToken,
     params.buyToken,
-    params.sellAmount,
-    params.buyAmount,
     params.deadline,
     params.nonce
   )
@@ -113,10 +105,12 @@ export async function deployEscrow(
 
 export async function settleEscrow(
   config: ServerConfig,
-  escrowAddress: string
+  escrowAddress: string,
+  sellAmount: bigint,
+  buyAmount: bigint
 ): Promise<string> {
   const escrow = getTradeEscrow(escrowAddress, config)
-  const tx = await escrow.settle()
+  const tx = await escrow.settle(sellAmount, buyAmount)
   const receipt = await tx.wait()
   return receipt.hash as string
 }
@@ -129,6 +123,14 @@ export async function refundEscrow(
   const tx = await escrow.refund()
   const receipt = await tx.wait()
   return receipt.hash as string
+}
+
+export async function isEscrowCancelled(
+  config: ServerConfig,
+  escrowAddress: string
+): Promise<boolean> {
+  const escrow = getTradeEscrow(escrowAddress, config)
+  return escrow.cancelled() as Promise<boolean>
 }
 
 export async function checkTokenBalance(

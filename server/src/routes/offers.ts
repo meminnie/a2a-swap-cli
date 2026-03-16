@@ -85,8 +85,6 @@ export async function offerRoutes(
         buyer: seller, // placeholder — will be updated on accept
         sellToken,
         buyToken,
-        sellAmount: BigInt(sellAmount),
-        buyAmount: BigInt(buyAmount),
         deadline,
         nonce,
       })
@@ -186,7 +184,21 @@ export async function offerRoutes(
       return reply.send({
         success: true,
         data: {
-          ...offer,
+          id: offer.id,
+          seller: offer.seller,
+          buyer: offer.buyer,
+          sellToken: offer.sell_token,
+          sellAmount: offer.sell_amount,
+          buyToken: offer.buy_token,
+          buyAmount: offer.buy_amount,
+          status: offer.status,
+          escrowAddress: offer.escrow_address,
+          minScore: offer.min_score,
+          deadline: offer.deadline,
+          nonce: offer.nonce,
+          txHash: offer.tx_hash,
+          chain: offer.chain,
+          createdAt: offer.created_at,
           sellerScore: sellerRep.score,
           buyerScore: buyerRep?.score ?? null,
         },
@@ -235,8 +247,6 @@ export async function offerRoutes(
         buyer: buyer.toLowerCase(),
         sellToken: offer.sell_token,
         buyToken: offer.buy_token,
-        sellAmount: BigInt(offer.sell_amount),
-        buyAmount: BigInt(offer.buy_amount),
         deadline,
         nonce: BigInt(offer.nonce ?? 0),
       }
