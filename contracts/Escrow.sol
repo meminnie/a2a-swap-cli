@@ -5,8 +5,9 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 
-/// @title Escrow - P2P OTC swap escrow for AI agents
+/// @title Escrow - P2P OTC swap escrow for AI agents (DEPRECATED)
 /// @notice Two-party token escrow: both deposit, then swap executes atomically
+/// @dev DEPRECATED: Use EscrowFactory + TradeEscrow (CREATE2) for new trades
 contract Escrow is ReentrancyGuard {
     using SafeERC20 for IERC20;
 
