@@ -14,6 +14,9 @@
     },
     "./cli": "./dist/src/cli/index.js"
   },
+  "files": [
+    "dist/src/**"
+  ],
   "scripts": {
     "build": "hardhat compile && tsc",
     "cli": "ts-node src/cli/index.ts",
