@@ -3,11 +3,13 @@ import hre from "hardhat"
 import { time } from "@nomicfoundation/hardhat-network-helpers"
 
 describe("Escrow", function () {
+  const FEE_BPS = 10 // 0.1%
+
   async function deployEscrowFixture() {
-    const [proposer, acceptor, third] = await hre.ethers.getSigners()
+    const [proposer, acceptor, third, feeWallet] = await hre.ethers.getSigners()
 
     const Escrow = await hre.ethers.getContractFactory("Escrow")
-    const escrow = await Escrow.deploy()
+    const escrow = await Escrow.deploy(feeWallet.address, FEE_BPS)
 
     // Deploy mock ERC20 tokens for testing
     const MockToken = await hre.ethers.getContractFactory("MockERC20")
@@ -18,7 +20,7 @@ describe("Escrow", function () {
     await tokenA.mint(proposer.address, mintAmount)
     await tokenB.mint(acceptor.address, mintAmount)
 
-    return { escrow, tokenA, tokenB, proposer, acceptor, third }
+    return { escrow, tokenA, tokenB, proposer, acceptor, third, feeWallet }
   }
 
   describe("createOffer", function () {
@@ -70,8 +72,8 @@ describe("Escrow", function () {
   })
 
   describe("full swap flow", function () {
-    it("should settle when both parties deposit", async function () {
-      const { escrow, tokenA, tokenB, proposer, acceptor } =
+    it("should settle when both parties deposit (with fee deduction)", async function () {
+      const { escrow, tokenA, tokenB, proposer, acceptor, feeWallet } =
         await deployEscrowFixture()
 
       const sellAmount = hre.ethers.parseEther("100")
@@ -98,8 +100,16 @@ describe("Escrow", function () {
       const offer = await escrow.getOffer(0)
       expect(offer.status).to.equal(2) // Settled
 
-      expect(await tokenA.balanceOf(acceptor.address)).to.equal(sellAmount)
-      expect(await tokenB.balanceOf(proposer.address)).to.equal(buyAmount)
+      // 0.1% fee deducted from both sides
+      const sellFee = sellAmount * BigInt(FEE_BPS) / 10000n
+      const buyFee = buyAmount * BigInt(FEE_BPS) / 10000n
+
+      expect(await tokenA.balanceOf(acceptor.address)).to.equal(sellAmount - sellFee)
+      expect(await tokenB.balanceOf(proposer.address)).to.equal(buyAmount - buyFee)
+
+      // Fee recipient receives fees
+      expect(await tokenA.balanceOf(feeWallet.address)).to.equal(sellFee)
+      expect(await tokenB.balanceOf(feeWallet.address)).to.equal(buyFee)
     })
   })
 
@@ -369,6 +379,68 @@ describe("Escrow", function () {
 
       const offer = await escrow.getOffer(0)
       expect(offer.status).to.equal(4) // Expired
+    })
+  })
+
+  describe("protocol fee", function () {
+    it("should initialize with correct fee settings", async function () {
+      const { escrow, feeWallet } = await deployEscrowFixture()
+      expect(await escrow.feeBps()).to.equal(FEE_BPS)
+      expect(await escrow.feeRecipient()).to.equal(feeWallet.address)
+    })
+
+    it("should allow owner to update feeBps", async function () {
+      const { escrow } = await deployEscrowFixture()
+      await escrow.setFeeBps(20) // 0.2%
+      expect(await escrow.feeBps()).to.equal(20)
+    })
+
+    it("should reject feeBps above MAX_FEE_BPS", async function () {
+      const { escrow } = await deployEscrowFixture()
+      await expect(escrow.setFeeBps(101)).to.be.revertedWithCustomError(escrow, "FeeTooHigh")
+    })
+
+    it("should reject non-owner fee updates", async function () {
+      const { escrow, acceptor } = await deployEscrowFixture()
+      await expect(
+        escrow.connect(acceptor).setFeeBps(20)
+      ).to.be.revertedWithCustomError(escrow, "OnlyOwner")
+    })
+
+    it("should allow owner to update feeRecipient", async function () {
+      const { escrow, third } = await deployEscrowFixture()
+      await escrow.setFeeRecipient(third.address)
+      expect(await escrow.feeRecipient()).to.equal(third.address)
+    })
+
+    it("should reject zero address feeRecipient", async function () {
+      const { escrow } = await deployEscrowFixture()
+      await expect(
+        escrow.setFeeRecipient(hre.ethers.ZeroAddress)
+      ).to.be.revertedWithCustomError(escrow, "InvalidFeeRecipient")
+    })
+
+    it("should track totalFeesCollected", async function () {
+      const { escrow, tokenA, tokenB, proposer, acceptor } =
+        await deployEscrowFixture()
+
+      const sellAmount = hre.ethers.parseEther("1000")
+      const buyAmount = hre.ethers.parseEther("500")
+
+      await escrow.createOffer(
+        await tokenA.getAddress(), sellAmount,
+        await tokenB.getAddress(), buyAmount, 3600
+      )
+
+      await escrow.connect(acceptor).acceptOffer(0)
+      const escrowAddress = await escrow.getAddress()
+      await tokenA.connect(proposer).approve(escrowAddress, sellAmount)
+      await tokenB.connect(acceptor).approve(escrowAddress, buyAmount)
+      await escrow.connect(proposer).deposit(0)
+      await escrow.connect(acceptor).deposit(0)
+
+      const expectedTotal = (sellAmount * BigInt(FEE_BPS) / 10000n) + (buyAmount * BigInt(FEE_BPS) / 10000n)
+      expect(await escrow.totalFeesCollected()).to.equal(expectedTotal)
     })
   })
 
