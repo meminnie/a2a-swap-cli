@@ -40,9 +40,23 @@ contract Escrow is ReentrancyGuard {
     }
 
     uint48 public constant DEPOSIT_WINDOW = 5 minutes;
+    uint256 public constant MAX_FEE_BPS = 100; // 1% max fee cap
+
+    address public owner;
+    address public feeRecipient;
+    uint256 public feeBps; // basis points (10 = 0.1%)
+    uint256 public totalFeesCollected;
 
     uint256 public nextOfferId;
     mapping(uint256 => Offer) public offers;
+
+    constructor(address _feeRecipient, uint256 _feeBps) {
+        if (_feeRecipient == address(0)) revert InvalidFeeRecipient();
+        if (_feeBps > MAX_FEE_BPS) revert FeeTooHigh();
+        owner = msg.sender;
+        feeRecipient = _feeRecipient;
+        feeBps = _feeBps;
+    }
 
     event OfferCreated(
         uint256 indexed offerId,
@@ -59,6 +73,10 @@ contract Escrow is ReentrancyGuard {
     event OfferCancelled(uint256 indexed offerId);
     event OfferExpired(uint256 indexed offerId);
     event DepositTimeout(uint256 indexed offerId);
+    event FeeCollected(uint256 indexed offerId, address token, uint256 amount);
+    event FeeBpsUpdated(uint256 oldBps, uint256 newBps);
+    event FeeRecipientUpdated(address oldRecipient, address newRecipient);
+    event OwnershipTransferred(address oldOwner, address newOwner);
 
     error OfferNotOpen();
     error OfferNotAccepted();
@@ -67,12 +85,15 @@ contract Escrow is ReentrancyGuard {
     error OfferExpiredErr();
     error OfferNotExpired();
     error OnlyProposer();
+    error OnlyOwner();
     error InvalidAmount();
     error InvalidDuration();
     error SameToken();
     error DepositWindowExpired();
     error DepositWindowNotExpired();
     error BothDeposited();
+    error FeeTooHigh();
+    error InvalidFeeRecipient();
 
     /// @notice Create a new OTC swap offer
     function createOffer(
@@ -243,24 +264,62 @@ contract Escrow is ReentrancyGuard {
         emit OfferExpired(offerId);
     }
 
-    /// @dev Execute the swap — send tokens to counterparties
+    /// @dev Execute the swap — send tokens to counterparties, deduct protocol fee
     function _settle(uint256 offerId) internal {
         Offer storage offer = offers[offerId];
         offer.status = OfferStatus.Settled;
 
-        // Proposer's sellToken goes to acceptor
+        uint256 sellFee = (offer.sellAmount * feeBps) / 10_000;
+        uint256 buyFee = (offer.buyAmount * feeBps) / 10_000;
+
+        // Proposer's sellToken goes to acceptor (minus fee)
         IERC20(offer.sellToken).safeTransfer(
             offer.acceptor,
-            offer.sellAmount
+            offer.sellAmount - sellFee
         );
 
-        // Acceptor's buyToken goes to proposer
+        // Acceptor's buyToken goes to proposer (minus fee)
         IERC20(offer.buyToken).safeTransfer(
             offer.proposer,
-            offer.buyAmount
+            offer.buyAmount - buyFee
         );
 
+        // Send fees to feeRecipient
+        if (sellFee > 0) {
+            IERC20(offer.sellToken).safeTransfer(feeRecipient, sellFee);
+            emit FeeCollected(offerId, offer.sellToken, sellFee);
+        }
+        if (buyFee > 0) {
+            IERC20(offer.buyToken).safeTransfer(feeRecipient, buyFee);
+            emit FeeCollected(offerId, offer.buyToken, buyFee);
+        }
+
+        totalFeesCollected += sellFee + buyFee;
         emit SwapSettled(offerId);
+    }
+
+    /// @notice Update protocol fee (owner only)
+    function setFeeBps(uint256 _feeBps) external {
+        if (msg.sender != owner) revert OnlyOwner();
+        if (_feeBps > MAX_FEE_BPS) revert FeeTooHigh();
+        emit FeeBpsUpdated(feeBps, _feeBps);
+        feeBps = _feeBps;
+    }
+
+    /// @notice Update fee recipient (owner only)
+    function setFeeRecipient(address _feeRecipient) external {
+        if (msg.sender != owner) revert OnlyOwner();
+        if (_feeRecipient == address(0)) revert InvalidFeeRecipient();
+        emit FeeRecipientUpdated(feeRecipient, _feeRecipient);
+        feeRecipient = _feeRecipient;
+    }
+
+    /// @notice Transfer ownership (owner only)
+    function transferOwnership(address newOwner) external {
+        if (msg.sender != owner) revert OnlyOwner();
+        if (newOwner == address(0)) revert InvalidFeeRecipient();
+        emit OwnershipTransferred(owner, newOwner);
+        owner = newOwner;
     }
 
     /// @notice Get offer details
