@@ -8,6 +8,12 @@ const deployKey = process.env.PRIVATE_KEY ?? process.env.PRIVATE_KEY_TEST1
 const accounts = deployKey ? [deployKey] : []
 
 const config: HardhatUserConfig = {
+  paths: {
+    sources: "./contracts",
+    tests: "./contracts/test",
+    cache: "./cache",
+    artifacts: "./artifacts",
+  },
   solidity: {
     version: "0.8.24",
     settings: {
