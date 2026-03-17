@@ -206,6 +206,13 @@ RPC_URL=https://sepolia.base.org
 | tUSDC | `0xc210208ee5Ad77FFa7E0eB0690f74a2E269d42b2` |
 | tWETH | `0x4322cB832Ab806cC123540428125a92180725a23` |
 
+## Contract Architecture
+
+- **TradeEscrow** constructor: seller, buyer, sellToken, buyToken, feeBps, feeRecipient, operator, deadline (no amounts)
+- **`settle(sellAmt, buyAmt)`**: operator passes amounts from DB; contract checks `balance >= amount`
+- **`rescueToken(token)`**: unrestricted — sellToken→seller, buyToken→buyer, unknown→caller. Blocked after settle/refund/cancel.
+- Offers with `escrow balance < sellAmount` are hidden from `GET /offers`
+
 ## Protocol Fee
 
 - 0.1% (10 bps) from both sides on settlement

@@ -14,7 +14,9 @@ Buyer  CLI ──→ API Server ──→ Operator EOA (CREATE2 deploy + settle)
 
 - **Offchain matching** via Supabase — fast discovery, no gas for browsing
 - **CREATE2 escrow** per trade — seller sends tokens to pre-computed address before contract exists
+- **Amounts off-chain** — trade amounts stored in DB, not in contract constructor. Operator passes amounts at settle time.
 - **Operator deploys + settles** — gasless for users, they only transfer tokens
+- **Balance-gated listing** — offers hidden from discovery if escrow balance < promised amount
 - **Reputation system** — score starts at 0, grows with successful trades
 
 ## Stack
@@ -160,11 +162,12 @@ const trades = await otc.getHistory("0x...", 20)
 
 Sellers can set `--min-score` to gate who can accept their offers.
 
-## Protocol Fee
+## Contract Architecture
 
-- 0.1% (10 bps) from both sides on settlement
-- Minimum $0.50 per side
-- Owner can adjust via `setFeeBps()` (max 1%) and `setFeeRecipient()`
+- **TradeEscrow** constructor takes: seller, buyer, sellToken, buyToken, feeBps, feeRecipient, operator, deadline (no amounts)
+- **`settle(sellAmt, buyAmt)`** — operator passes amounts from DB; contract validates `balance >= amount`
+- **`rescueToken(token)`** — unrestricted: sellToken→seller, buyToken→buyer, unknown→caller. Blocked after settle/refund/cancel.
+- **Protocol fee**: 0.1% (10 bps) from both sides on settlement. Owner can adjust via `setFeeBps()` (max 1%) and `setFeeRecipient()`.
 
 ## Environment Variables
 
@@ -195,11 +198,12 @@ Sellers can set `--min-score` to gate who can accept their offers.
 
 ```
 contracts/
-  *.sol              Solidity contracts (EscrowFactory, TradeEscrow, Escrow)
-  test/              Contract tests (49 passing)
+  src/               Solidity contracts (EscrowFactory, TradeEscrow)
+  test/              Contract tests (39 passing)
   scripts/           Deploy scripts
 server/
   src/               Fastify API server + operator automation
+  test/              Server tests (26 passing)
   supabase/          SQL schema (schema-v2.sql)
 src/
   cli/commands/      CLI command implementations
@@ -221,7 +225,8 @@ src/
 ## Testing
 
 ```bash
-npx hardhat test   # 49 tests passing
+npx hardhat test              # 39 contract tests
+cd server && npm test         # 26 server tests
 ```
 
 ## License
