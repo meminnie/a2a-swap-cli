@@ -1,19 +1,16 @@
-import Fastify from "fastify"
 import cors from "@fastify/cors"
 import rateLimit from "@fastify/rate-limit"
 import swagger from "@fastify/swagger"
 import swaggerUi from "@fastify/swagger-ui"
 import { loadServerConfig } from "./config"
-import { offerRoutes } from "./routes/offers"
-import { rfqRoutes } from "./routes/rfq"
-import { reputationRoutes } from "./routes/reputation"
+import { buildApp } from "./app"
 import { createSupabaseClient } from "./supabase"
 import { startOperatorLoop } from "./services/operator"
 
 async function main() {
   const config = loadServerConfig()
 
-  const app = Fastify({ logger: true })
+  const app = await buildApp(config)
 
   await app.register(cors, { origin: true })
   await app.register(rateLimit, { max: 100, timeWindow: "1 minute" })
@@ -39,14 +36,6 @@ async function main() {
     uiConfig: { docExpansion: "list", deepLinking: true },
   })
 
-  await app.register(offerRoutes, { config })
-  await app.register(rfqRoutes, { config })
-  await app.register(reputationRoutes, { config })
-
-  // Health check
-  app.get("/health", async () => ({ status: "ok", chain: config.chain }))
-
-  // Start operator monitoring loop
   const supabase = createSupabaseClient(config)
   startOperatorLoop(config, supabase)
 
