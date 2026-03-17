@@ -201,8 +201,8 @@ RPC_URL=https://sepolia.base.org
 
 | Contract | Address |
 |----------|---------|
-| EscrowFactory | *deploy pending* |
-| Escrow v4 (deprecated) | `0x4Eb5F9B97DaCBECE9c870Da94cfF4a883E702527` |
+| EscrowFactory v2 | `0x1354252a5B16899e7D1450a8Fc84eF5c04393BA4` |
+| EscrowFactory v1 (deprecated) | `0x4Eb5F9B97DaCBECE9c870Da94cfF4a883E702527` |
 | tUSDC | `0xc210208ee5Ad77FFa7E0eB0690f74a2E269d42b2` |
 | tWETH | `0x4322cB832Ab806cC123540428125a92180725a23` |
 

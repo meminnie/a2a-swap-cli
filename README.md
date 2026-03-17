@@ -218,7 +218,7 @@ src/
 
 | Contract | Address |
 |----------|---------|
-| EscrowFactory | *pending deploy* |
+| EscrowFactory | `0x1354252a5B16899e7D1450a8Fc84eF5c04393BA4` |
 | tUSDC | `0xc210208ee5Ad77FFa7E0eB0690f74a2E269d42b2` |
 | tWETH | `0x4322cB832Ab806cC123540428125a92180725a23` |
 
