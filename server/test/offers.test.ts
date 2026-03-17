@@ -43,6 +43,8 @@ import {
   updateReputation,
 } from "../src/supabase"
 
+import { checkTokenBalance } from "../src/contract"
+
 describe("Offer Routes", () => {
   beforeEach(() => {
     vi.clearAllMocks()
@@ -52,6 +54,8 @@ describe("Offer Routes", () => {
     })
     vi.mocked(updateOfferStatus).mockResolvedValue(undefined)
     vi.mocked(updateReputation).mockResolvedValue(undefined)
+    // Default: balance check returns sufficient balance
+    vi.mocked(checkTokenBalance).mockResolvedValue(BigInt("1000000"))
   })
 
   describe("POST /offers", () => {
@@ -116,6 +120,51 @@ describe("Offer Routes", () => {
 
       expect(res.statusCode).toBe(200)
       expect(res.json().data).toHaveLength(0)
+    })
+
+    it("should hide offers with insufficient escrow balance", async () => {
+      vi.mocked(fetchOpenOffers).mockResolvedValue([
+        makeOffer({ sell_amount: "1000000" }) as any,
+      ])
+      vi.mocked(checkTokenBalance).mockResolvedValue(BigInt("500000"))
+
+      const app = await buildApp(TEST_CONFIG)
+      const res = await app.inject({ method: "GET", url: "/offers" })
+
+      expect(res.statusCode).toBe(200)
+      expect(res.json().data).toHaveLength(0)
+    })
+
+    it("should show offers when escrow balance is sufficient", async () => {
+      vi.mocked(fetchOpenOffers).mockResolvedValue([
+        makeOffer({ sell_amount: "1000000" }) as any,
+      ])
+      vi.mocked(checkTokenBalance).mockResolvedValue(BigInt("1000000"))
+      vi.mocked(getReputation).mockResolvedValue({
+        wallet: SELLER, successful_swaps: 3, failed_swaps: 0, cancellations: 0, score: 3, updated_at: "",
+      })
+
+      const app = await buildApp(TEST_CONFIG)
+      const res = await app.inject({ method: "GET", url: "/offers" })
+
+      expect(res.statusCode).toBe(200)
+      expect(res.json().data).toHaveLength(1)
+    })
+
+    it("should include offers when balance check fails (RPC error)", async () => {
+      vi.mocked(fetchOpenOffers).mockResolvedValue([
+        makeOffer() as any,
+      ])
+      vi.mocked(checkTokenBalance).mockRejectedValue(new Error("RPC timeout"))
+      vi.mocked(getReputation).mockResolvedValue({
+        wallet: SELLER, successful_swaps: 0, failed_swaps: 0, cancellations: 0, score: 0, updated_at: "",
+      })
+
+      const app = await buildApp(TEST_CONFIG)
+      const res = await app.inject({ method: "GET", url: "/offers" })
+
+      expect(res.statusCode).toBe(200)
+      expect(res.json().data).toHaveLength(1)
     })
   })
 

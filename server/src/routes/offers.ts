@@ -18,7 +18,7 @@ import {
   updateReputation,
   createSupabaseClient,
 } from "../supabase"
-import { computeEscrowAddress, deployEscrow, getFactory } from "../contract"
+import { computeEscrowAddress, deployEscrow, getFactory, checkTokenBalance } from "../contract"
 
 interface CreateOfferBody {
   readonly seller: string
@@ -121,8 +121,22 @@ export async function offerRoutes(
       const chain = request.query.chain ?? config.chain
       const offers = await fetchOpenOffers(supabase, chain)
 
-      const results = await Promise.all(
+      const mapped = await Promise.all(
         offers.map(async (offer) => {
+          // Hide offers where seller deposit is below promised amount
+          if (offer.escrow_address) {
+            try {
+              const balance = await checkTokenBalance(
+                config,
+                offer.sell_token,
+                offer.escrow_address
+              )
+              if (balance < BigInt(offer.sell_amount)) return null
+            } catch {
+              // RPC failure — include offer rather than hiding it
+            }
+          }
+
           const rep = await getReputation(supabase, offer.seller)
           return {
             id: offer.id,
@@ -139,6 +153,7 @@ export async function offerRoutes(
         })
       )
 
+      const results = mapped.filter((r) => r !== null)
       return reply.send({ success: true, data: results })
     }
   )
