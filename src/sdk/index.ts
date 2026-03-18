@@ -2,6 +2,7 @@ import * as api from "../api"
 
 export type {
   OfferListItem,
+  OfferDetail,
   CreateOfferResult,
   AcceptOfferResult,
   ReputationResult,
@@ -55,7 +56,7 @@ export class ZeroOTC {
     return api.listOffers(chain)
   }
 
-  async getOffer(id: number): Promise<Record<string, unknown>> {
+  async getOffer(id: number): Promise<api.OfferDetail> {
     return api.getOffer(id)
   }
 

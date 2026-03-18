@@ -3,6 +3,7 @@ import { ethers } from "ethers"
 import { loadConfig } from "../../config"
 import { getSigner } from "../../contract"
 import { acceptOffer, getOffer } from "../../api"
+import { ERC20_TRANSFER_ABI } from "../abi"
 
 interface AcceptOptions {
   readonly wallet?: string
@@ -31,19 +32,16 @@ export function registerAcceptCommand(program: Command): void {
         console.info(`Deposit deadline: ${result.depositDeadline}`)
 
         // 3. Transfer buy tokens to deployed escrow
-        const buyToken = offer.buyToken as string
-        const buyAmount = offer.buyAmount as string
-
         const buyTokenContract = new ethers.Contract(
-          buyToken,
-          ["function transfer(address to, uint256 amount) returns (bool)"],
+          offer.buyToken,
+          ERC20_TRANSFER_ABI,
           signer
         )
 
         console.info("Transferring tokens to escrow...")
         const tx = await buyTokenContract.transfer(
           result.escrowAddress,
-          BigInt(buyAmount)
+          BigInt(offer.buyAmount)
         )
         await tx.wait()
 

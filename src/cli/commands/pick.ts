@@ -3,6 +3,7 @@ import { ethers } from "ethers"
 import { loadConfig } from "../../config"
 import { getSigner } from "../../contract"
 import { pickQuote, getOffer } from "../../api"
+import { ERC20_TRANSFER_ABI } from "../abi"
 
 interface PickOptions {
   readonly wallet?: string
@@ -26,19 +27,17 @@ export function registerPickCommand(program: Command): void {
 
         // 2. Get RFQ details to transfer tokens
         const rfq = await getOffer(Number(rfqId))
-        const sellToken = rfq.sellToken as string
-        const sellAmount = rfq.sellAmount as string
 
         const sellTokenContract = new ethers.Contract(
-          sellToken,
-          ["function transfer(address to, uint256 amount) returns (bool)"],
+          rfq.sellToken,
+          ERC20_TRANSFER_ABI,
           signer
         )
 
         console.info("Transferring tokens to escrow...")
         const tx = await sellTokenContract.transfer(
           result.escrowAddress,
-          BigInt(sellAmount)
+          BigInt(rfq.sellAmount)
         )
         await tx.wait()
 

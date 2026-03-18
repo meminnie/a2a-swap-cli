@@ -82,8 +82,28 @@ export async function listOffers(
   return request<readonly OfferListItem[]>(`/offers${query}`)
 }
 
-export async function getOffer(id: number): Promise<Record<string, unknown>> {
-  return request<Record<string, unknown>>(`/offers/${id}`)
+export interface OfferDetail {
+  readonly id: number
+  readonly seller: string
+  readonly buyer: string | null
+  readonly sellToken: string
+  readonly sellAmount: string
+  readonly buyToken: string
+  readonly buyAmount: string
+  readonly status: string
+  readonly escrowAddress: string
+  readonly minScore: number
+  readonly deadline: string
+  readonly nonce: number
+  readonly txHash: string | null
+  readonly chain: string
+  readonly createdAt: string
+  readonly sellerScore: number
+  readonly buyerScore: number | null
+}
+
+export async function getOffer(id: number): Promise<OfferDetail> {
+  return request<OfferDetail>(`/offers/${id}`)
 }
 
 export async function acceptOffer(
