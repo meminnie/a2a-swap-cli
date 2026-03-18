@@ -67,7 +67,7 @@ export function registerProposeCommand(program: Command): void {
           buyAmount: buyAmountWei.toString(),
           minScore: Number(options.minScore),
           deadlineSeconds: duration,
-        })
+        }, signer)
 
         console.info(`Offer #${result.offerId} created`)
         console.info(`  Escrow address: ${result.escrowAddress}`)

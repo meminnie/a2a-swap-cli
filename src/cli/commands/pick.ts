@@ -4,6 +4,7 @@ import { loadConfig } from "../../config"
 import { getSigner } from "../../contract"
 import { pickQuote, getOffer } from "../../api"
 import { ERC20_TRANSFER_ABI } from "../abi"
+import { parsePositiveInt } from "../validation"
 
 interface PickOptions {
   readonly wallet?: string
@@ -21,12 +22,15 @@ export function registerPickCommand(program: Command): void {
 
         // 1. Pick quote via API → deploys escrow
         console.info(`Picking quote #${quoteId} for RFQ #${rfqId}...`)
-        const result = await pickQuote(Number(rfqId), Number(quoteId))
+        const parsedRfqId = parsePositiveInt(rfqId, "rfq-id")
+        const parsedQuoteId = parsePositiveInt(quoteId, "quote-id")
+        const wallet = await signer.getAddress()
+        const result = await pickQuote(parsedRfqId, parsedQuoteId, wallet, signer)
 
         console.info(`Escrow deployed: ${result.escrowAddress}`)
 
         // 2. Get RFQ details to transfer tokens
-        const rfq = await getOffer(Number(rfqId))
+        const rfq = await getOffer(parsedRfqId)
 
         const sellTokenContract = new ethers.Contract(
           rfq.sellToken,

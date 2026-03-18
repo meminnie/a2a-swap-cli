@@ -4,6 +4,7 @@ import { loadConfig } from "../../config"
 import { getSigner } from "../../contract"
 import { resolveTokenAddress } from "../../tokens"
 import { submitQuote } from "../../api"
+import { parsePositiveInt } from "../validation"
 
 interface QuoteOptions {
   readonly offer: string
@@ -34,13 +35,14 @@ export function registerQuoteCommand(program: Command): void {
         const sellAmountWei = ethers.parseUnits(offerAmount, 18)
 
         console.info("Submitting quote...")
-        const result = await submitQuote(Number(rfqId), {
+        const parsedRfqId = parsePositiveInt(rfqId, "rfq-id")
+        const result = await submitQuote(parsedRfqId, {
           quoter: quoterAddress,
           sellToken: sellTokenAddress,
           sellAmount: sellAmountWei.toString(),
           buyToken: sellTokenAddress, // will be filled from RFQ context
           buyAmount: sellAmountWei.toString(),
-        })
+        }, signer)
 
         console.info(`Quote submitted:`)
         console.info(`  Quote ID: ${result.quoteId}`)

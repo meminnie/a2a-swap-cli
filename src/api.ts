@@ -1,4 +1,7 @@
 import * as dotenv from "dotenv"
+import type { ethers } from "ethers"
+import { signRequest } from "./sign"
+
 dotenv.config()
 
 const API_URL = process.env.API_URL ?? "http://localhost:3000"
@@ -9,17 +12,30 @@ interface ApiResponse<T> {
   readonly error?: string
 }
 
+interface SignedRequestOptions extends RequestInit {
+  readonly signer?: ethers.Wallet
+}
+
 async function request<T>(
   path: string,
-  options?: RequestInit
+  options?: SignedRequestOptions
 ): Promise<T> {
   const headers: Record<string, string> = { ...options?.headers as Record<string, string> }
   if (options?.body) {
     headers["Content-Type"] = "application/json"
   }
 
+  if (options?.signer && options?.body) {
+    const bodyObj = JSON.parse(options.body as string)
+    const { signature, timestamp } = await signRequest(options.signer, bodyObj)
+    headers["x-signature"] = signature
+    headers["x-timestamp"] = timestamp
+  }
+
+  const { signer: _signer, ...fetchOptions } = options ?? {}
+
   const res = await fetch(`${API_URL}${path}`, {
-    ...options,
+    ...fetchOptions,
     headers,
   })
 
@@ -60,18 +76,22 @@ export interface AcceptOfferResult {
   readonly depositDeadline: string
 }
 
-export async function createOffer(params: {
-  readonly seller: string
-  readonly sellToken: string
-  readonly sellAmount: string
-  readonly buyToken: string
-  readonly buyAmount: string
-  readonly minScore?: number
-  readonly deadlineSeconds?: number
-}): Promise<CreateOfferResult> {
+export async function createOffer(
+  params: {
+    readonly seller: string
+    readonly sellToken: string
+    readonly sellAmount: string
+    readonly buyToken: string
+    readonly buyAmount: string
+    readonly minScore?: number
+    readonly deadlineSeconds?: number
+  },
+  signer: ethers.Wallet
+): Promise<CreateOfferResult> {
   return request<CreateOfferResult>("/offers", {
     method: "POST",
     body: JSON.stringify(params),
+    signer,
   })
 }
 
@@ -108,21 +128,25 @@ export async function getOffer(id: number): Promise<OfferDetail> {
 
 export async function acceptOffer(
   id: number,
-  buyer: string
+  buyer: string,
+  signer: ethers.Wallet
 ): Promise<AcceptOfferResult> {
   return request<AcceptOfferResult>(`/offers/${id}/accept`, {
     method: "POST",
     body: JSON.stringify({ buyer }),
+    signer,
   })
 }
 
 export async function cancelOffer(
   id: number,
-  wallet: string
+  wallet: string,
+  signer: ethers.Wallet
 ): Promise<{ readonly penalty: boolean; readonly scoreDelta?: number }> {
   return request(`/offers/${id}/cancel`, {
     method: "POST",
     body: JSON.stringify({ wallet }),
+    signer,
   })
 }
 
@@ -184,18 +208,22 @@ export interface QuoteListItem {
   readonly quoterScore: number
 }
 
-export async function createRfq(params: {
-  readonly seller: string
-  readonly sellToken: string
-  readonly sellAmount: string
-  readonly buyToken: string
-  readonly buyAmount: string
-  readonly minScore?: number
-  readonly deadlineSeconds?: number
-}): Promise<CreateRfqResult> {
+export async function createRfq(
+  params: {
+    readonly seller: string
+    readonly sellToken: string
+    readonly sellAmount: string
+    readonly buyToken: string
+    readonly buyAmount: string
+    readonly minScore?: number
+    readonly deadlineSeconds?: number
+  },
+  signer: ethers.Wallet
+): Promise<CreateRfqResult> {
   return request<CreateRfqResult>("/rfq", {
     method: "POST",
     body: JSON.stringify(params),
+    signer,
   })
 }
 
@@ -207,11 +235,13 @@ export async function submitQuote(
     readonly sellAmount: string
     readonly buyToken: string
     readonly buyAmount: string
-  }
+  },
+  signer: ethers.Wallet
 ): Promise<{ readonly quoteId: number }> {
   return request(`/rfq/${rfqId}/quote`, {
     method: "POST",
     body: JSON.stringify(params),
+    signer,
   })
 }
 
@@ -223,9 +253,13 @@ export async function listQuotes(
 
 export async function pickQuote(
   rfqId: number,
-  quoteId: number
+  quoteId: number,
+  wallet: string,
+  signer: ethers.Wallet
 ): Promise<AcceptOfferResult> {
   return request<AcceptOfferResult>(`/rfq/${rfqId}/pick/${quoteId}`, {
     method: "POST",
+    body: JSON.stringify({ wallet }),
+    signer,
   })
 }

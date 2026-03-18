@@ -1,3 +1,9 @@
+import { ethers } from "ethers"
+
+export function formatTokenAmount(wei: string, decimals: number = 18): string {
+  return ethers.formatUnits(wei, decimals)
+}
+
 export function formatTable(rows: ReadonlyArray<Record<string, unknown>>): void {
   if (rows.length === 0) {
     console.info("No results found.")

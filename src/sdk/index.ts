@@ -1,3 +1,4 @@
+import type { ethers } from "ethers"
 import * as api from "../api"
 
 export type {
@@ -13,13 +14,17 @@ export type {
 
 export interface ZeroOTCConfig {
   readonly apiUrl?: string
+  readonly signer: ethers.Wallet
 }
 
 export class ZeroOTC {
-  constructor(config?: ZeroOTCConfig) {
-    if (config?.apiUrl) {
+  private readonly signer: ethers.Wallet
+
+  constructor(config: ZeroOTCConfig) {
+    if (config.apiUrl) {
       process.env.API_URL = config.apiUrl
     }
+    this.signer = config.signer
   }
 
   // ── Swap ──
@@ -33,21 +38,21 @@ export class ZeroOTC {
     readonly minScore?: number
     readonly deadlineSeconds?: number
   }): Promise<api.CreateOfferResult> {
-    return api.createOffer(params)
+    return api.createOffer(params, this.signer)
   }
 
   async accept(
     offerId: number,
     buyer: string
   ): Promise<api.AcceptOfferResult> {
-    return api.acceptOffer(offerId, buyer)
+    return api.acceptOffer(offerId, buyer, this.signer)
   }
 
   async cancel(
     offerId: number,
     wallet: string
   ): Promise<{ readonly penalty: boolean; readonly scoreDelta?: number }> {
-    return api.cancelOffer(offerId, wallet)
+    return api.cancelOffer(offerId, wallet, this.signer)
   }
 
   // ── Discovery ──
@@ -71,7 +76,7 @@ export class ZeroOTC {
     readonly minScore?: number
     readonly deadlineSeconds?: number
   }): Promise<api.CreateRfqResult> {
-    return api.createRfq(params)
+    return api.createRfq(params, this.signer)
   }
 
   async submitQuote(
@@ -84,7 +89,7 @@ export class ZeroOTC {
       readonly buyAmount: string
     }
   ): Promise<{ readonly quoteId: number }> {
-    return api.submitQuote(rfqId, params)
+    return api.submitQuote(rfqId, params, this.signer)
   }
 
   async listQuotes(rfqId: number): Promise<readonly api.QuoteListItem[]> {
@@ -93,9 +98,10 @@ export class ZeroOTC {
 
   async pickQuote(
     rfqId: number,
-    quoteId: number
+    quoteId: number,
+    wallet: string
   ): Promise<api.AcceptOfferResult> {
-    return api.pickQuote(rfqId, quoteId)
+    return api.pickQuote(rfqId, quoteId, wallet, this.signer)
   }
 
   // ── History ──

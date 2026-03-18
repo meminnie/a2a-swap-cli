@@ -1,6 +1,7 @@
 import { Command } from "commander"
 import { listQuotes } from "../../api"
-import { formatTable } from "../format"
+import { formatTable, formatTokenAmount } from "../format"
+import { parsePositiveInt } from "../validation"
 
 export function registerQuotesCommand(program: Command): void {
   program
@@ -9,13 +10,14 @@ export function registerQuotesCommand(program: Command): void {
     .action(async (rfqId: string) => {
       try {
         console.info(`Fetching quotes for RFQ #${rfqId}...`)
-        const quotes = await listQuotes(Number(rfqId))
+        const id = parsePositiveInt(rfqId, "rfq-id")
+        const quotes = await listQuotes(id)
 
         const rows = quotes.map((q) => ({
           ID: q.id,
           Quoter: `${q.quoter.slice(0, 6)}...${q.quoter.slice(-4)}`,
-          Sell: q.sellAmount,
-          Buy: q.buyAmount,
+          Sell: formatTokenAmount(q.sellAmount),
+          Buy: formatTokenAmount(q.buyAmount),
           Score: q.quoterScore,
           Status: q.status,
         }))

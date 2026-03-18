@@ -1,7 +1,7 @@
 import { Command } from "commander"
 import { listOffers } from "../../api"
 import { getTokenSymbol } from "../../tokens"
-import { formatTable } from "../format"
+import { formatTable, formatTokenAmount } from "../format"
 
 interface ListOptions {
   readonly chain: string
@@ -19,8 +19,8 @@ export function registerListCommand(program: Command): void {
 
         const rows = offers.map((o) => ({
           ID: o.id,
-          Sell: `${o.sellAmount} ${getTokenSymbol(o.sellToken, options.chain) ?? o.sellToken.slice(0, 10)}`,
-          Buy: `${o.buyAmount} ${getTokenSymbol(o.buyToken, options.chain) ?? o.buyToken.slice(0, 10)}`,
+          Sell: `${formatTokenAmount(o.sellAmount)} ${getTokenSymbol(o.sellToken, options.chain) ?? o.sellToken.slice(0, 10)}`,
+          Buy: `${formatTokenAmount(o.buyAmount)} ${getTokenSymbol(o.buyToken, options.chain) ?? o.buyToken.slice(0, 10)}`,
           Seller: `${o.seller.slice(0, 6)}...${o.seller.slice(-4)}`,
           Score: o.sellerScore,
           MinScore: o.minScore,

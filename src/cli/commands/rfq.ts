@@ -51,7 +51,7 @@ export function registerRfqCommand(program: Command): void {
           buyAmount: buyAmountWei.toString(),
           minScore: Number(options.minScore),
           deadlineSeconds: Number(options.duration),
-        })
+        }, signer)
 
         console.info(`RFQ created:`)
         console.info(`  RFQ ID:   ${result.rfqId}`)

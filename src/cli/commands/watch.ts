@@ -2,6 +2,7 @@ import { Command } from "commander"
 import { listOffers } from "../../api"
 import type { OfferListItem } from "../../api"
 import { getTokenSymbol } from "../../tokens"
+import { parsePositiveInt } from "../validation"
 
 function formatOffer(offer: OfferListItem, chain: string): string {
   const sellSymbol = getTokenSymbol(offer.sellToken, chain) ?? offer.sellToken.slice(0, 10)
@@ -20,7 +21,7 @@ export function registerWatchCommand(program: Command): void {
     .option("--interval <seconds>", "Poll interval in seconds", "10")
     .action(async (options: { readonly chain: string; readonly interval: string }) => {
       try {
-        const intervalMs = Number(options.interval) * 1000
+        const intervalMs = parsePositiveInt(options.interval, "interval") * 1000
         const seenIds = new Set<number>()
 
         console.info(`Watching for new offers on ${options.chain} (polling every ${options.interval}s)...`)
@@ -43,7 +44,11 @@ export function registerWatchCommand(program: Command): void {
         }
 
         await poll()
-        setInterval(poll, intervalMs)
+        const intervalId = setInterval(poll, intervalMs)
+        process.on("SIGINT", () => {
+          clearInterval(intervalId)
+          process.exit(0)
+        })
         await new Promise(() => {})
       } catch (error) {
         const message = error instanceof Error ? error.message : "Unknown error"

@@ -4,6 +4,7 @@ import { loadConfig } from "../../config"
 import { getSigner } from "../../contract"
 import { acceptOffer, getOffer } from "../../api"
 import { ERC20_TRANSFER_ABI } from "../abi"
+import { parsePositiveInt } from "../validation"
 
 interface AcceptOptions {
   readonly wallet?: string
@@ -22,11 +23,12 @@ export function registerAcceptCommand(program: Command): void {
 
         // 1. Get offer details
         console.info(`Fetching offer #${offerId}...`)
-        const offer = await getOffer(Number(offerId))
+        const id = parsePositiveInt(offerId, "offer-id")
+        const offer = await getOffer(id)
 
         // 2. Accept via API → triggers contract deployment
         console.info("Accepting offer (deploying escrow)...")
-        const result = await acceptOffer(Number(offerId), buyerAddress)
+        const result = await acceptOffer(id, buyerAddress, signer)
 
         console.info(`Escrow deployed: ${result.escrowAddress}`)
         console.info(`Deposit deadline: ${result.depositDeadline}`)

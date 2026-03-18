@@ -4,6 +4,7 @@ import { loadConfig } from "../../config"
 import { getSigner } from "../../contract"
 import { cancelOffer, getOffer } from "../../api"
 import { TRADE_ESCROW_CANCEL_ABI } from "../abi"
+import { parsePositiveInt } from "../validation"
 
 interface CancelOptions {
   readonly wallet?: string
@@ -20,7 +21,8 @@ export function registerCancelCommand(program: Command): void {
         const signer = getSigner(config)
         const wallet = await signer.getAddress()
 
-        const offer = await getOffer(Number(offerId))
+        const id = parsePositiveInt(offerId, "offer-id")
+        const offer = await getOffer(id)
 
         if (offer.status === "deployed" && offer.escrowAddress) {
           console.info(`Cancelling on-chain (escrow at ${offer.escrowAddress})...`)
@@ -35,7 +37,7 @@ export function registerCancelCommand(program: Command): void {
         }
 
         console.info(`Cancelling offer #${offerId}...`)
-        const result = await cancelOffer(Number(offerId), wallet)
+        const result = await cancelOffer(id, wallet, signer)
 
         if (result.penalty) {
           console.info(`Offer #${offerId} cancelled with penalty (score ${result.scoreDelta})`)

@@ -3,6 +3,7 @@ import { loadConfig } from "../../config"
 import { getSigner } from "../../contract"
 import { fetchHistory } from "../../api"
 import { getTokenSymbol } from "../../tokens"
+import { parsePositiveInt } from "../validation"
 
 export function registerHistoryCommand(program: Command): void {
   program
@@ -18,7 +19,8 @@ export function registerHistoryCommand(program: Command): void {
         const address = await signer.getAddress()
 
         console.info(`Fetching last ${options.limit} trades for ${address.slice(0, 6)}...${address.slice(-4)}...`)
-        const trades = await fetchHistory(address, Number(options.limit))
+        const limit = parsePositiveInt(options.limit, "limit")
+        const trades = await fetchHistory(address, limit)
 
         if (trades.length === 0) {
           console.info("No trade history found.")
