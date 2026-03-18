@@ -31,8 +31,8 @@ export function registerAcceptCommand(program: Command): void {
         console.info(`Deposit deadline: ${result.depositDeadline}`)
 
         // 3. Transfer buy tokens to deployed escrow
-        const buyToken = offer.buy_token as string
-        const buyAmount = offer.buy_amount as string
+        const buyToken = offer.buyToken as string
+        const buyAmount = offer.buyAmount as string
 
         const buyTokenContract = new ethers.Contract(
           buyToken,
