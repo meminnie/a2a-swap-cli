@@ -26,8 +26,8 @@ export function registerPickCommand(program: Command): void {
 
         // 2. Get RFQ details to transfer tokens
         const rfq = await getOffer(Number(rfqId))
-        const sellToken = rfq.sell_token as string
-        const sellAmount = rfq.sell_amount as string
+        const sellToken = rfq.sellToken as string
+        const sellAmount = rfq.sellAmount as string
 
         const sellTokenContract = new ethers.Contract(
           sellToken,
