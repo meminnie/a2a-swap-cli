@@ -1,6 +1,6 @@
 # zero-otc CLI Commands (v2)
 
-> All commands interact with the API server. Direct on-chain / Supabase calls are removed (except `watch` and `history` which still use Supabase read-only).
+> All commands interact with the API server. No direct Supabase calls from the CLI.
 
 ## Swap Flow
 
@@ -69,7 +69,7 @@ npx ts-node src/cli/index.ts list --chain base-sepolia
 
 ### history
 
-View settled/cancelled/expired trade history for a wallet. *(Still uses Supabase directly — read-only)*
+View settled/cancelled/expired trade history for a wallet.
 
 ```bash
 npx ts-node src/cli/index.ts history --wallet test1
@@ -83,7 +83,7 @@ npx ts-node src/cli/index.ts history --wallet test1 --limit 50
 
 ### watch
 
-Realtime offer monitoring via Supabase Realtime. *(Still uses Supabase directly — read-only)*
+Poll for new offers via the API server.
 
 ```bash
 npx ts-node src/cli/index.ts watch
@@ -182,8 +182,6 @@ Output includes: score, successful swaps, failed swaps, cancellations.
 ```bash
 # Required (CLI)
 PRIVATE_KEY_<NAME>=...     # Wallet private keys (e.g. PRIVATE_KEY_TEST1)
-SUPABASE_URL=https://...   # Supabase project URL (for watch/history)
-SUPABASE_ANON_KEY=...      # Supabase anon key (read-only, for watch/history)
 
 # Optional (CLI)
 API_URL=http://localhost:3000  # API server URL (default: http://localhost:3000)
