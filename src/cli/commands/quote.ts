@@ -3,7 +3,7 @@ import { ethers } from "ethers"
 import { loadConfig } from "../../config"
 import { getSigner } from "../../contract"
 import { resolveTokenAddress } from "../../tokens"
-import { submitQuote, listQuotes } from "../../api"
+import { submitQuote } from "../../api"
 
 interface QuoteOptions {
   readonly offer: string
@@ -32,9 +32,6 @@ export function registerQuoteCommand(program: Command): void {
 
         const sellTokenAddress = resolveTokenAddress(offerToken, options.chain)
         const sellAmountWei = ethers.parseUnits(offerAmount, 18)
-
-        // For RFQ quotes, we need to check what the RFQ wants
-        const quotes = await listQuotes(Number(rfqId))
 
         console.info("Submitting quote...")
         const result = await submitQuote(Number(rfqId), {

@@ -4,6 +4,7 @@ import { loadConfig } from "../../config"
 import { getSigner } from "../../contract"
 import { resolveTokenAddress } from "../../tokens"
 import { createOffer } from "../../api"
+import { ERC20_TRANSFER_ABI } from "../abi"
 
 interface ProposeOptions {
   readonly sell: string
@@ -75,7 +76,7 @@ export function registerProposeCommand(program: Command): void {
         // 2. Transfer sell tokens to escrow address (CREATE2)
         const sellTokenContract = new ethers.Contract(
           sellTokenAddress,
-          ["function transfer(address to, uint256 amount) returns (bool)"],
+          ERC20_TRANSFER_ABI,
           signer
         )
 
