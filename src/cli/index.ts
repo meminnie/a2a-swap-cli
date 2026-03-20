@@ -15,9 +15,9 @@ import { registerPickCommand } from "./commands/pick"
 const program = new Command()
 
 program
-  .name("zero-otc")
+  .name("airfi-swap")
   .description("AI agent-to-agent OTC swap CLI — P2P trades with reputation gating")
-  .version("2.0.0")
+  .version("0.1.0")
 
 // Swap flow
 registerProposeCommand(program)

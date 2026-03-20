@@ -1,4 +1,4 @@
-# zero-otc v2: CREATE2 Escrow + API Server + Reputation
+# airfi-swap: CREATE2 Escrow + API Server + Reputation
 
 ## Overview
 
@@ -14,7 +14,7 @@ P2P OTC swap platform for AI agents on Base chain.
 - **API Server**: Node.js / Fastify + @fastify/swagger
 - **DB**: Supabase (PostgreSQL) — service_role key로 서버에서만 접근
 - **CLI**: Commander.js → API 호출로 전환
-- **SDK**: ZeroOTC class → API 호출로 전환
+- **SDK**: AirfiSwap class → API 호출로 전환
 - **Chain**: Base Sepolia → Mainnet
 
 ## Architecture
@@ -154,7 +154,7 @@ Buyer  ──→ API Server ──→ Operator EOA (CREATE2 deploy + settle)
 
 ## Phase 5: SDK 리팩터링 ✅
 
-- [x] ZeroOTC class → API 서버 호출로 전환
+- [x] AirfiSwap class → API 서버 호출로 전환
 - [x] Supabase 직접 의존 제거
 - [x] 기존 인터페이스 유지 (breaking change 최소화)
 

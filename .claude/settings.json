@@ -1,0 +1,51 @@
+{
+  "permissions": {
+    "allow": [
+      "WebFetch(domain:chatgpt.com)",
+      "Bash(npm init:*)",
+      "Bash(npm install:*)",
+      "Bash(npm pkg:*)",
+      "Bash(npx hardhat:*)",
+      "Bash(npm uninstall:*)",
+      "Bash(npx ts-node:*)",
+      "Bash(git -C /Users/minnie/Desktop/a2a-cli init)",
+      "Bash(git -C /Users/minnie/Desktop/a2a-cli status)",
+      "Bash(git -C /Users/minnie/Desktop/a2a-cli log --oneline -5)",
+      "Bash(git -C /Users/minnie/Desktop/a2a-cli add .gitignore package.json package-lock.json tsconfig.json hardhat.config.ts .env.example)",
+      "Bash(git -C:*)",
+      "WebSearch",
+      "Bash(grep -r \"GAME\\\\|GameWorker\\\\|GameAgent\" /Users/minnie/Desktop/a2a-cli --include=*.ts --include=*.md --include=*.json)",
+      "WebFetch(domain:docs.elizaos.ai)",
+      "WebFetch(domain:elizaos.github.io)",
+      "WebFetch(domain:eliza.how)",
+      "WebFetch(domain:www.npmjs.com)",
+      "Bash(npm list:*)",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:docs.game.virtuals.io)",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "WebFetch(domain:whitepaper.virtuals.io)",
+      "Bash(npx tsc:*)",
+      "Bash(git status:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(npm view:*)",
+      "Bash(git rm:*)",
+      "Bash(npm test:*)",
+      "Bash(find /Users/minnie/Desktop/a2a-swap-cli/src -type f -name \"*.ts\" -exec wc -l {})",
+      "Bash(node -e \":*)",
+      "Bash(npx vitest:*)",
+      "Bash(node dist/src/cli/index.js --help)",
+      "Bash(rm -f /Users/minnie/Desktop/a2a/a2a-swap-contract/package-lock.json)",
+      "Bash(pnpm install:*)",
+      "Bash(pnpm build:*)",
+      "Bash(git remote:*)",
+      "Bash(git push:*)"
+    ],
+    "additionalDirectories": [
+      "/Users/minnie/Desktop/a2a/a2a-swap-contract",
+      "/Users/minnie/Desktop/a2a/a2a-swap-contract/abi",
+      "/Users/minnie/Desktop/a2a/a2a-swap-server/src",
+      "/Users/minnie/Desktop/a2a/a2a-swap-server"
+    ]
+  }
+}

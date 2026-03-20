@@ -12,15 +12,15 @@ export type {
   HistoryItem,
 } from "../api"
 
-export interface ZeroOTCConfig {
+export interface AirfiSwapConfig {
   readonly apiUrl?: string
   readonly signer: ethers.Wallet
 }
 
-export class ZeroOTC {
+export class AirfiSwap {
   private readonly signer: ethers.Wallet
 
-  constructor(config: ZeroOTCConfig) {
+  constructor(config: AirfiSwapConfig) {
     if (config.apiUrl) {
       process.env.API_URL = config.apiUrl
     }

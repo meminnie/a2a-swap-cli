@@ -167,9 +167,9 @@ pnpm cli trust 0x1234...abcd
 ## SDK
 
 ```typescript
-import { ZeroOTC } from "a2a-cli"
+import { AirfiSwap } from "@airfi/swap"
 
-const otc = new ZeroOTC({ apiUrl: "http://localhost:8080" })
+const otc = new AirfiSwap({ apiUrl: "http://localhost:8080" })
 
 // Create an offer
 const offer = await otc.propose({
@@ -261,7 +261,7 @@ Buyer  CLI ──> API Server ──> Operator EOA (CREATE2 deploy + settle)
 ```
 src/
   cli/commands/       CLI command implementations
-  sdk/index.ts        SDK (ZeroOTC class)
+  sdk/index.ts        SDK (AirfiSwap class)
   api.ts              API client
   config.ts           Environment config
   contract.ts         ethers.js signer/provider

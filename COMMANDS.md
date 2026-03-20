@@ -1,4 +1,4 @@
-# zero-otc CLI Commands (v2)
+# airfi-swap CLI Commands (v2)
 
 > All commands interact with the API server. No direct Supabase calls from the CLI.
 
@@ -9,7 +9,7 @@
 Create a new OTC swap offer. Computes a CREATE2 escrow address and transfers sell tokens to it.
 
 ```bash
-npx ts-node src/cli/index.ts propose \
+airfi-swap propose \
   --sell "1000 tUSDC" \
   --buy "0.5 tWETH" \
   --duration 3600 \
@@ -31,7 +31,7 @@ npx ts-node src/cli/index.ts propose \
 Accept an open offer. The API deploys the escrow contract, then you transfer buy tokens to it. Settlement happens automatically via the operator.
 
 ```bash
-npx ts-node src/cli/index.ts accept 42 --wallet test2
+airfi-swap accept 42 --wallet test2
 ```
 
 | Option | Required | Default | Description |
@@ -44,7 +44,7 @@ npx ts-node src/cli/index.ts accept 42 --wallet test2
 Cancel an offer. Free if still open; reputation penalty (-2) if already matched.
 
 ```bash
-npx ts-node src/cli/index.ts cancel 42 --wallet test1
+airfi-swap cancel 42 --wallet test1
 ```
 
 | Option | Required | Default | Description |
@@ -59,8 +59,8 @@ npx ts-node src/cli/index.ts cancel 42 --wallet test1
 View open OTC offers with seller reputation scores.
 
 ```bash
-npx ts-node src/cli/index.ts list
-npx ts-node src/cli/index.ts list --chain base-sepolia
+airfi-swap list
+airfi-swap list --chain base-sepolia
 ```
 
 | Option | Required | Default | Description |
@@ -72,8 +72,8 @@ npx ts-node src/cli/index.ts list --chain base-sepolia
 View settled/cancelled/expired trade history for a wallet.
 
 ```bash
-npx ts-node src/cli/index.ts history --wallet test1
-npx ts-node src/cli/index.ts history --wallet test1 --limit 50
+airfi-swap history --wallet test1
+airfi-swap history --wallet test1 --limit 50
 ```
 
 | Option | Required | Default | Description |
@@ -86,8 +86,8 @@ npx ts-node src/cli/index.ts history --wallet test1 --limit 50
 Poll for new offers via the API server.
 
 ```bash
-npx ts-node src/cli/index.ts watch
-npx ts-node src/cli/index.ts watch --chain base-sepolia
+airfi-swap watch
+airfi-swap watch --chain base-sepolia
 ```
 
 | Option | Required | Default | Description |
@@ -101,7 +101,7 @@ npx ts-node src/cli/index.ts watch --chain base-sepolia
 Broadcast a Request for Quote — "I need X, budget Y".
 
 ```bash
-npx ts-node src/cli/index.ts rfq \
+airfi-swap rfq \
   --need "1 tWETH" \
   --budget "2200 tUSDC" \
   --duration 1800 \
@@ -123,7 +123,7 @@ npx ts-node src/cli/index.ts rfq \
 Submit a quote for an open RFQ.
 
 ```bash
-npx ts-node src/cli/index.ts quote 7 --offer "0.5 tWETH" --wallet test2
+airfi-swap quote 7 --offer "0.5 tWETH" --wallet test2
 ```
 
 | Option | Required | Default | Description |
@@ -138,7 +138,7 @@ npx ts-node src/cli/index.ts quote 7 --offer "0.5 tWETH" --wallet test2
 List all quotes for an RFQ with quoter reputation scores.
 
 ```bash
-npx ts-node src/cli/index.ts quotes 7
+airfi-swap quotes 7
 ```
 
 | Option | Required | Default | Description |
@@ -150,7 +150,7 @@ npx ts-node src/cli/index.ts quotes 7
 Pick a quote from an RFQ. Deploys escrow and transfers your tokens to it. Settlement is automatic.
 
 ```bash
-npx ts-node src/cli/index.ts pick 7 3 --wallet test1
+airfi-swap pick 7 3 --wallet test1
 ```
 
 | Option | Required | Default | Description |
@@ -166,7 +166,7 @@ npx ts-node src/cli/index.ts pick 7 3 --wallet test1
 Check reputation score for any wallet address.
 
 ```bash
-npx ts-node src/cli/index.ts trust 0x1234...abcd
+airfi-swap trust 0x1234...abcd
 ```
 
 Output includes: score, successful swaps, failed swaps, cancellations.
