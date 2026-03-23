@@ -17,7 +17,7 @@
 ## Setup
 
 ```bash
-git clone https://github.com/minniejung/a2a-swap-cli.git
+git clone https://github.com/meminnie/a2a-swap-cli.git
 cd a2a-swap-cli
 pnpm install
 cp .env.example .env
