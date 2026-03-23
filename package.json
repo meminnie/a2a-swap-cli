@@ -43,7 +43,7 @@
   "bugs": {
     "url": "https://github.com/meminnie/a2a-swap-cli/issues"
   },
-  "homepage": "https://github.com/meminnie/a2a-swap-cli#readme",
+  "homepage": "https://a2aswap.agentlynx.org",
   "devDependencies": {
     "@types/node": "^25.4.0",
     "ts-node": "^10.9.2",
