@@ -2,7 +2,7 @@ import { Command } from "commander"
 import { ethers } from "ethers"
 import { loadConfig } from "../../config"
 import { getSigner } from "../../contract"
-import { resolveTokenAddress } from "../../tokens"
+import { resolveTokenAddress, getTokenDecimals } from "../../tokens"
 import { submitQuote, getOffer } from "../../api"
 import { parsePositiveInt } from "../validation"
 
@@ -42,7 +42,7 @@ export function registerQuoteCommand(program: Command): void {
         const rfq = await getOffer(parsedRfqId)
 
         const sellTokenAddress = resolveTokenAddress(offerToken, options.chain)
-        const sellAmountWei = ethers.parseUnits(offerAmount, 18)
+        const sellAmountWei = ethers.parseUnits(offerAmount, getTokenDecimals(offerToken, options.chain))
 
         console.info("Submitting quote...")
         const result = await submitQuote(parsedRfqId, {

@@ -2,7 +2,7 @@ import { Command } from "commander"
 import { ethers } from "ethers"
 import { loadConfig } from "../../config"
 import { getSigner } from "../../contract"
-import { resolveTokenAddress, isNativeToken, getWethAddress } from "../../tokens"
+import { resolveTokenAddress, isNativeToken, getWethAddress, getTokenDecimals } from "../../tokens"
 import { createOffer } from "../../api"
 import { wrapETH } from "../../weth"
 import { pollAndUnwrap } from "../../poll"
@@ -77,8 +77,8 @@ export function registerProposeCommand(program: Command): void {
 
         const sellTokenAddress = resolveTokenAddress(sellToken, options.chain)
         const buyTokenAddress = resolveTokenAddress(buyToken, options.chain)
-        const sellAmountWei = ethers.parseUnits(sellAmount, 18)
-        const buyAmountWei = ethers.parseUnits(buyAmount, 18)
+        const sellAmountWei = ethers.parseUnits(sellAmount, getTokenDecimals(sellToken, options.chain))
+        const buyAmountWei = ethers.parseUnits(buyAmount, getTokenDecimals(buyToken, options.chain))
 
         // 1. Create offer via API → get escrow address
         console.info("Creating offer...")

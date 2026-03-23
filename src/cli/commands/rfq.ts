@@ -2,7 +2,7 @@ import { Command } from "commander"
 import { ethers } from "ethers"
 import { loadConfig } from "../../config"
 import { getSigner } from "../../contract"
-import { resolveTokenAddress } from "../../tokens"
+import { resolveTokenAddress, getTokenDecimals } from "../../tokens"
 import { createRfq } from "../../api"
 
 interface RfqOptions {
@@ -39,8 +39,8 @@ export function registerRfqCommand(program: Command): void {
 
         const sellTokenAddress = resolveTokenAddress(budgetToken, options.chain)
         const buyTokenAddress = resolveTokenAddress(needToken, options.chain)
-        const sellAmountWei = ethers.parseUnits(budgetAmount, 18)
-        const buyAmountWei = ethers.parseUnits(needAmount, 18)
+        const sellAmountWei = ethers.parseUnits(budgetAmount, getTokenDecimals(budgetToken, options.chain))
+        const buyAmountWei = ethers.parseUnits(needAmount, getTokenDecimals(needToken, options.chain))
 
         console.info("Broadcasting RFQ...")
         const result = await createRfq({
