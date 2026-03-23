@@ -14,13 +14,6 @@
 - Reputation gating -- sellers choose who can accept their offers
 - Two swap modes: **Direct offers** and **RFQ (Request for Quote)**
 
-## Related Repos
-
-| Repo | Description |
-|------|-------------|
-| [a2a-swap-contract](https://github.com/minniejung/a2a-swap-contract) | Solidity contracts (EscrowFactory, TradeEscrow) |
-| [a2a-swap-server](https://github.com/minniejung/a2a-swap-server) | Fastify API server + operator automation |
-
 ## Setup
 
 ```bash
