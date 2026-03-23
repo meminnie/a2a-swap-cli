@@ -3,7 +3,7 @@ import { ethers } from "ethers"
 import { loadConfig } from "../../config"
 import { getSigner } from "../../contract"
 import { resolveTokenAddress } from "../../tokens"
-import { submitQuote } from "../../api"
+import { submitQuote, getOffer } from "../../api"
 import { parsePositiveInt } from "../validation"
 
 interface QuoteOptions {
@@ -27,21 +27,30 @@ export function registerQuoteCommand(program: Command): void {
           throw new Error("Invalid format. Use: --offer '0.5 ETH'")
         }
 
+        const offerNum = Number(offerAmount)
+        if (Number.isNaN(offerNum) || offerNum <= 0) {
+          throw new Error(`Invalid offer amount: ${offerAmount}`)
+        }
+
         const config = loadConfig(options.wallet)
         const signer = getSigner(config)
         const quoterAddress = await signer.getAddress()
+
+        const parsedRfqId = parsePositiveInt(rfqId, "rfq-id")
+
+        // Fetch RFQ to get buyToken/buyAmount (what quoter will receive)
+        const rfq = await getOffer(parsedRfqId)
 
         const sellTokenAddress = resolveTokenAddress(offerToken, options.chain)
         const sellAmountWei = ethers.parseUnits(offerAmount, 18)
 
         console.info("Submitting quote...")
-        const parsedRfqId = parsePositiveInt(rfqId, "rfq-id")
         const result = await submitQuote(parsedRfqId, {
           quoter: quoterAddress,
           sellToken: sellTokenAddress,
           sellAmount: sellAmountWei.toString(),
-          buyToken: sellTokenAddress, // will be filled from RFQ context
-          buyAmount: sellAmountWei.toString(),
+          buyToken: rfq.sellToken,
+          buyAmount: rfq.sellAmount,
         }, signer)
 
         console.info(`Quote submitted:`)
