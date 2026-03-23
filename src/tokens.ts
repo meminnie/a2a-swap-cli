@@ -27,6 +27,20 @@ const TOKEN_ADDRESSES: ChainTokens = {
   },
 };
 
+const NATIVE_ALIASES = new Set(["ETH", "eth"])
+
+export function isNativeToken(symbol: string): boolean {
+  return NATIVE_ALIASES.has(symbol)
+}
+
+export function getWethAddress(chain: string): string {
+  const chainTokens = TOKEN_ADDRESSES[chain]
+  if (!chainTokens?.WETH) {
+    throw new Error(`No WETH address configured for chain: ${chain}`)
+  }
+  return chainTokens.WETH
+}
+
 export function resolveTokenAddress(symbol: string, chain: string): string {
   const chainTokens = TOKEN_ADDRESSES[chain];
 
@@ -34,6 +48,11 @@ export function resolveTokenAddress(symbol: string, chain: string): string {
     throw new Error(
       `Unsupported chain: ${chain}. Supported: ${Object.keys(TOKEN_ADDRESSES).join(", ")}`,
     );
+  }
+
+  // ETH → WETH mapping (native token handled in CLI via wrap/unwrap)
+  if (isNativeToken(symbol)) {
+    return getWethAddress(chain)
   }
 
   // Case-insensitive lookup

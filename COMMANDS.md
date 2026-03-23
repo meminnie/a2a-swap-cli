@@ -171,6 +171,39 @@ airfi-swap trust 0x1234...abcd
 
 Output includes: score, successful swaps, failed swaps, cancellations.
 
+## Utility
+
+### unwrap
+
+Convert all WETH balance back to native ETH.
+
+```bash
+airfi-swap unwrap --wallet test1
+```
+
+| Option | Required | Default | Description |
+|--------|----------|---------|-------------|
+| `--chain <chain>` | No | `base-sepolia` | Target chain |
+| `--wallet <name>` | No | - | Wallet name |
+
+## Native ETH Support
+
+You can use `ETH` as a token symbol in any command. The CLI automatically handles wrap/unwrap:
+
+```bash
+# Sell ETH (auto-wraps to WETH before escrow deposit)
+airfi-swap propose --sell "0.5 ETH" --buy "1000 USDC" --wallet test1
+
+# Buy with ETH (auto-wraps to WETH before escrow deposit)
+airfi-swap accept 42 --wallet test2
+
+# After settlement, WETH is auto-unwrapped back to ETH
+# If you skip the auto-unwrap (Ctrl+C), use:
+airfi-swap unwrap --wallet test1
+```
+
+A gas buffer of 0.001 ETH is reserved when wrapping to ensure you can pay for transactions.
+
 ## Common Options
 
 | Option | Description |

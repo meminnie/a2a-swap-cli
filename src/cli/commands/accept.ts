@@ -3,6 +3,9 @@ import { ethers } from "ethers"
 import { loadConfig } from "../../config"
 import { getSigner } from "../../contract"
 import { acceptOffer, getOffer } from "../../api"
+import { getWethAddress, getTokenSymbol } from "../../tokens"
+import { wrapETH } from "../../weth"
+import { pollAndUnwrap } from "../../poll"
 import { ERC20_TRANSFER_ABI } from "../abi"
 import { parsePositiveInt } from "../validation"
 
@@ -33,7 +36,18 @@ export function registerAcceptCommand(program: Command): void {
         console.info(`Escrow deployed: ${result.escrowAddress}`)
         console.info(`Deposit deadline: ${result.depositDeadline}`)
 
-        // 3. Transfer buy tokens to deployed escrow
+        // 3. Wrap ETH if buyer is paying with native token
+        const buyAmount = BigInt(offer.buyAmount)
+        const chain = offer.chain ?? "base-sepolia"
+        const wethAddress = getWethAddress(chain)
+        const isBuyNative = offer.buyToken.toLowerCase() === wethAddress.toLowerCase()
+
+        if (isBuyNative) {
+          console.info("Wrapping ETH → WETH...")
+          await wrapETH(signer, wethAddress, buyAmount)
+        }
+
+        // 4. Transfer buy tokens to deployed escrow
         const buyTokenContract = new ethers.Contract(
           offer.buyToken,
           ERC20_TRANSFER_ABI,
@@ -43,7 +57,7 @@ export function registerAcceptCommand(program: Command): void {
         console.info("Transferring tokens to escrow...")
         const tx = await buyTokenContract.transfer(
           result.escrowAddress,
-          BigInt(offer.buyAmount)
+          buyAmount
         )
         await tx.wait()
 
@@ -51,7 +65,20 @@ export function registerAcceptCommand(program: Command): void {
         console.info(`  Offer ID: ${offerId}`)
         console.info(`  Escrow:   ${result.escrowAddress}`)
         console.info(`  Tx:       ${tx.hash}`)
-        console.info(`  Settlement will happen automatically.`)
+
+        // 5. Poll for settlement, then auto-unwrap if receiving WETH
+        const sellToken = offer.sellToken.toLowerCase()
+        const willReceiveWeth = sellToken === wethAddress.toLowerCase()
+        const sellAmount = BigInt(offer.sellAmount)
+
+        if (willReceiveWeth || isBuyNative) {
+          const unwrapAmount = willReceiveWeth ? sellAmount : buyAmount
+          console.info("  Waiting for settlement to auto-unwrap WETH → ETH...")
+          console.info("  (Press Ctrl+C to skip — you can unwrap manually later)")
+          await pollAndUnwrap(id, signer, wethAddress, unwrapAmount)
+        } else {
+          console.info("  Settlement will happen automatically.")
+        }
       } catch (error) {
         const message = error instanceof Error ? error.message : "Unknown error"
         console.error(`Failed to accept offer: ${message}`)

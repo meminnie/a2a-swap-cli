@@ -11,6 +11,7 @@ import { registerRfqCommand } from "./commands/rfq"
 import { registerQuoteCommand } from "./commands/quote"
 import { registerQuotesCommand } from "./commands/quotes"
 import { registerPickCommand } from "./commands/pick"
+import { registerUnwrapCommand } from "./commands/unwrap"
 
 const program = new Command()
 
@@ -37,5 +38,8 @@ registerPickCommand(program)
 
 // Reputation
 registerTrustCommand(program)
+
+// Utility
+registerUnwrapCommand(program)
 
 program.parse()

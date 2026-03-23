@@ -2,8 +2,10 @@ import { Command } from "commander"
 import { ethers } from "ethers"
 import { loadConfig } from "../../config"
 import { getSigner } from "../../contract"
-import { resolveTokenAddress } from "../../tokens"
+import { resolveTokenAddress, isNativeToken, getWethAddress } from "../../tokens"
 import { createOffer } from "../../api"
+import { wrapETH } from "../../weth"
+import { pollAndUnwrap } from "../../poll"
 import { ERC20_TRANSFER_ABI } from "../abi"
 
 interface ProposeOptions {
@@ -73,7 +75,12 @@ export function registerProposeCommand(program: Command): void {
         console.info(`  Escrow address: ${result.escrowAddress}`)
         console.info(`  Deadline: ${result.deadline}`)
 
-        // 2. Transfer sell tokens to escrow address (CREATE2)
+        // 2. Wrap ETH if native token, then transfer to escrow
+        if (isNativeToken(sellToken)) {
+          console.info("Wrapping ETH → WETH...")
+          await wrapETH(signer, getWethAddress(options.chain), sellAmountWei)
+        }
+
         const sellTokenContract = new ethers.Contract(
           sellTokenAddress,
           ERC20_TRANSFER_ABI,
@@ -94,6 +101,13 @@ export function registerProposeCommand(program: Command): void {
         console.info(`  Min Score: ${options.minScore}`)
         console.info(`  Escrow:   ${result.escrowAddress}`)
         console.info(`  Tx:       ${tx.hash}`)
+
+        // 3. If seller expects to receive ETH, poll for settlement and auto-unwrap
+        if (isNativeToken(buyToken)) {
+          console.info("  Waiting for settlement to auto-unwrap WETH → ETH...")
+          console.info("  (Press Ctrl+C to skip — you can unwrap manually later)")
+          await pollAndUnwrap(result.offerId, signer, getWethAddress(options.chain), buyAmountWei)
+        }
       } catch (error) {
         const message = error instanceof Error ? error.message : "Unknown error"
         console.error(`Failed to create offer: ${message}`)
