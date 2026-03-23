@@ -48,6 +48,23 @@ async function request<T>(
   return body.data as T
 }
 
+// --- Health ---
+
+interface HealthResponse {
+  readonly status: string
+  readonly chain: string
+  readonly gasless: boolean
+}
+
+export async function checkGaslessEnabled(): Promise<boolean> {
+  try {
+    const health = await request<HealthResponse>("/health")
+    return health.gasless
+  } catch {
+    return false
+  }
+}
+
 // --- Offers ---
 
 export interface OfferListItem {
@@ -79,6 +96,7 @@ export interface AcceptOfferResult {
 export async function createOffer(
   params: {
     readonly seller: string
+    readonly onChainAddress?: string
     readonly sellToken: string
     readonly sellAmount: string
     readonly buyToken: string
@@ -129,11 +147,16 @@ export async function getOffer(id: number): Promise<OfferDetail> {
 export async function acceptOffer(
   id: number,
   buyer: string,
-  signer: ethers.Wallet
+  signer: ethers.Wallet,
+  onChainAddress?: string
 ): Promise<AcceptOfferResult> {
+  const body: Record<string, string> = { buyer }
+  if (onChainAddress) {
+    body.onChainAddress = onChainAddress
+  }
   return request<AcceptOfferResult>(`/offers/${id}/accept`, {
     method: "POST",
-    body: JSON.stringify({ buyer }),
+    body: JSON.stringify(body),
     signer,
   })
 }
@@ -211,6 +234,7 @@ export interface QuoteListItem {
 export async function createRfq(
   params: {
     readonly seller: string
+    readonly onChainAddress?: string
     readonly sellToken: string
     readonly sellAmount: string
     readonly buyToken: string
@@ -231,6 +255,7 @@ export async function submitQuote(
   rfqId: number,
   params: {
     readonly quoter: string
+    readonly onChainAddress?: string
     readonly sellToken: string
     readonly sellAmount: string
     readonly buyToken: string
