@@ -3,14 +3,22 @@ import { ethers } from "ethers"
 import { loadConfig } from "../../config"
 import { getSigner } from "../../contract"
 import { acceptOffer, getOffer } from "../../api"
-import { getWethAddress, getTokenSymbol } from "../../tokens"
+import { getWethAddress } from "../../tokens"
 import { wrapETH } from "../../weth"
 import { pollAndUnwrap } from "../../poll"
-import { ERC20_TRANSFER_ABI } from "../abi"
 import { parsePositiveInt } from "../validation"
+import {
+  type TransactionSender,
+  createEoaSender,
+  createGaslessSender,
+} from "../../transaction-sender"
+import { loadGaslessConfig, requireGasless } from "../../gasless"
+import { fundAndWrapETH } from "../../gasless/wrap-helper"
+import { createSmartAccount } from "../../gasless/account"
 
 interface AcceptOptions {
   readonly wallet?: string
+  readonly gasless?: boolean
 }
 
 export function registerAcceptCommand(program: Command): void {
@@ -18,11 +26,25 @@ export function registerAcceptCommand(program: Command): void {
     .command("accept <offer-id>")
     .description("Accept an open offer")
     .option("--wallet <name>", "Wallet name (loads PRIVATE_KEY_<NAME> from .env)")
+    .option("--gasless", "Use ZeroDev Smart Account for gasless transactions")
     .action(async (offerId: string, options: AcceptOptions) => {
       try {
         const config = loadConfig(options.wallet)
         const signer = getSigner(config)
         const buyerAddress = await signer.getAddress()
+
+        let sender: TransactionSender
+        let onChainAddress: string | undefined
+
+        if (options.gasless) {
+          await requireGasless()
+          const gaslessConfig = loadGaslessConfig()
+          sender = await createGaslessSender(config.privateKey, gaslessConfig)
+          onChainAddress = sender.address
+          console.info(`Smart Account: ${onChainAddress}`)
+        } else {
+          sender = createEoaSender(signer)
+        }
 
         // 1. Get offer details
         console.info(`Fetching offer #${offerId}...`)
@@ -31,7 +53,7 @@ export function registerAcceptCommand(program: Command): void {
 
         // 2. Accept via API → triggers contract deployment
         console.info("Accepting offer (deploying escrow)...")
-        const result = await acceptOffer(id, buyerAddress, signer)
+        const result = await acceptOffer(id, buyerAddress, signer, onChainAddress)
 
         console.info(`Escrow deployed: ${result.escrowAddress}`)
         console.info(`Deposit deadline: ${result.depositDeadline}`)
@@ -43,28 +65,28 @@ export function registerAcceptCommand(program: Command): void {
         const isBuyNative = offer.buyToken.toLowerCase() === wethAddress.toLowerCase()
 
         if (isBuyNative) {
-          console.info("Wrapping ETH → WETH...")
-          await wrapETH(signer, wethAddress, buyAmount)
+          if (options.gasless) {
+            const gaslessConfig = loadGaslessConfig()
+            const { kernelClient } = await createSmartAccount(config.privateKey, gaslessConfig, chain)
+            await fundAndWrapETH(signer, sender.address, kernelClient, wethAddress, buyAmount)
+          } else {
+            console.info("Wrapping ETH → WETH...")
+            await wrapETH(signer, wethAddress, buyAmount)
+          }
         }
 
         // 4. Transfer buy tokens to deployed escrow
-        const buyTokenContract = new ethers.Contract(
-          offer.buyToken,
-          ERC20_TRANSFER_ABI,
-          signer
-        )
-
         console.info("Transferring tokens to escrow...")
-        const tx = await buyTokenContract.transfer(
+        const transferResult = await sender.sendErc20Transfer(
+          offer.buyToken,
           result.escrowAddress,
           buyAmount
         )
-        await tx.wait()
 
         console.info(`Offer accepted successfully:`)
         console.info(`  Offer ID: ${offerId}`)
         console.info(`  Escrow:   ${result.escrowAddress}`)
-        console.info(`  Tx:       ${tx.hash}`)
+        console.info(`  Tx:       ${transferResult.hash}`)
 
         // 5. Poll for settlement, then auto-unwrap if receiving WETH
         const sellToken = offer.sellToken.toLowerCase()

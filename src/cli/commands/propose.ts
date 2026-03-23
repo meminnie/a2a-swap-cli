@@ -6,7 +6,14 @@ import { resolveTokenAddress, isNativeToken, getWethAddress } from "../../tokens
 import { createOffer } from "../../api"
 import { wrapETH } from "../../weth"
 import { pollAndUnwrap } from "../../poll"
-import { ERC20_TRANSFER_ABI } from "../abi"
+import {
+  type TransactionSender,
+  createEoaSender,
+  createGaslessSender,
+} from "../../transaction-sender"
+import { loadGaslessConfig, requireGasless } from "../../gasless"
+import { fundAndWrapETH } from "../../gasless/wrap-helper"
+import { createSmartAccount } from "../../gasless/account"
 
 interface ProposeOptions {
   readonly sell: string
@@ -15,6 +22,7 @@ interface ProposeOptions {
   readonly duration: string
   readonly minScore: string
   readonly wallet?: string
+  readonly gasless?: boolean
 }
 
 export function registerProposeCommand(program: Command): void {
@@ -27,6 +35,7 @@ export function registerProposeCommand(program: Command): void {
     .option("--duration <seconds>", "Offer duration in seconds", "3600")
     .option("--min-score <score>", "Minimum buyer reputation score", "0")
     .option("--wallet <name>", "Wallet name (loads PRIVATE_KEY_<NAME> from .env)")
+    .option("--gasless", "Use ZeroDev Smart Account for gasless transactions")
     .action(async (options: ProposeOptions) => {
       try {
         const [sellAmount, sellToken] = options.sell.split(" ")
@@ -54,6 +63,19 @@ export function registerProposeCommand(program: Command): void {
         const signer = getSigner(config)
         const sellerAddress = await signer.getAddress()
 
+        let sender: TransactionSender
+        let onChainAddress: string | undefined
+
+        if (options.gasless) {
+          await requireGasless()
+          const gaslessConfig = loadGaslessConfig()
+          sender = await createGaslessSender(config.privateKey, gaslessConfig, options.chain)
+          onChainAddress = sender.address
+          console.info(`Smart Account: ${onChainAddress}`)
+        } else {
+          sender = createEoaSender(signer)
+        }
+
         const sellTokenAddress = resolveTokenAddress(sellToken, options.chain)
         const buyTokenAddress = resolveTokenAddress(buyToken, options.chain)
         const sellAmountWei = ethers.parseUnits(sellAmount, 18)
@@ -63,6 +85,7 @@ export function registerProposeCommand(program: Command): void {
         console.info("Creating offer...")
         const result = await createOffer({
           seller: sellerAddress,
+          onChainAddress,
           sellToken: sellTokenAddress,
           sellAmount: sellAmountWei.toString(),
           buyToken: buyTokenAddress,
@@ -77,22 +100,22 @@ export function registerProposeCommand(program: Command): void {
 
         // 2. Wrap ETH if native token, then transfer to escrow
         if (isNativeToken(sellToken)) {
-          console.info("Wrapping ETH → WETH...")
-          await wrapETH(signer, getWethAddress(options.chain), sellAmountWei)
+          if (options.gasless) {
+            const gaslessConfig = loadGaslessConfig()
+            const { kernelClient } = await createSmartAccount(config.privateKey, gaslessConfig, options.chain)
+            await fundAndWrapETH(signer, sender.address, kernelClient, getWethAddress(options.chain), sellAmountWei)
+          } else {
+            console.info("Wrapping ETH → WETH...")
+            await wrapETH(signer, getWethAddress(options.chain), sellAmountWei)
+          }
         }
 
-        const sellTokenContract = new ethers.Contract(
-          sellTokenAddress,
-          ERC20_TRANSFER_ABI,
-          signer
-        )
-
         console.info("Transferring tokens to escrow address...")
-        const tx = await sellTokenContract.transfer(
+        const transferResult = await sender.sendErc20Transfer(
+          sellTokenAddress,
           result.escrowAddress,
           sellAmountWei
         )
-        await tx.wait()
 
         console.info(`Offer created successfully:`)
         console.info(`  Offer ID: ${result.offerId}`)
@@ -100,7 +123,7 @@ export function registerProposeCommand(program: Command): void {
         console.info(`  Buy:      ${buyAmount} ${buyToken}`)
         console.info(`  Min Score: ${options.minScore}`)
         console.info(`  Escrow:   ${result.escrowAddress}`)
-        console.info(`  Tx:       ${tx.hash}`)
+        console.info(`  Tx:       ${transferResult.hash}`)
 
         // 3. If seller expects to receive ETH, poll for settlement and auto-unwrap
         if (isNativeToken(buyToken)) {
