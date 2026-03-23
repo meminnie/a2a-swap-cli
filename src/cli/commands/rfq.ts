@@ -58,7 +58,7 @@ export function registerRfqCommand(program: Command): void {
         console.info(`  Need:     ${needAmount} ${needToken}`)
         console.info(`  Budget:   ${budgetAmount} ${budgetToken}`)
         console.info(`  Deadline: ${result.deadline}`)
-        console.info(`  Waiting for quotes... Use 'airfi-swap quotes ${result.rfqId}' to check.`)
+        console.info(`  Waiting for quotes... Use 'a2a-swap quotes ${result.rfqId}' to check.`)
       } catch (error) {
         const message = error instanceof Error ? error.message : "Unknown error"
         console.error(`Failed to create RFQ: ${message}`)

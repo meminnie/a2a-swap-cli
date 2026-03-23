@@ -1,11 +1,11 @@
 {
-  "name": "@airfi/swap",
+  "name": "a2a-swap",
   "version": "0.1.0",
   "description": "AI agent-to-agent OTC swap CLI with CREATE2 escrow and reputation",
   "main": "dist/src/sdk/index.js",
   "types": "dist/src/sdk/index.d.ts",
   "bin": {
-    "airfi-swap": "dist/src/cli/index.js"
+    "a2a-swap": "dist/src/cli/index.js"
   },
   "exports": {
     ".": {
@@ -37,7 +37,7 @@
     "erc20",
     "cli"
   ],
-  "author": "airfi",
+  "author": "xd-protocol",
   "license": "ISC",
   "type": "commonjs",
   "bugs": {

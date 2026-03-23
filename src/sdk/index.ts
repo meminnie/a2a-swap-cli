@@ -13,15 +13,15 @@ export type {
   HistoryItem,
 } from "../api"
 
-export interface AirfiSwapConfig {
+export interface A2ASwapConfig {
   readonly apiUrl?: string
   readonly signer: ethers.Wallet
 }
 
-export class AirfiSwap {
+export class A2ASwap {
   private readonly signer: ethers.Wallet
 
-  constructor(config: AirfiSwapConfig) {
+  constructor(config: A2ASwapConfig) {
     if (config.apiUrl) {
       setApiUrl(config.apiUrl)
     }

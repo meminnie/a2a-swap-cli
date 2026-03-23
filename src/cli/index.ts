@@ -16,7 +16,7 @@ import { registerUnwrapCommand } from "./commands/unwrap"
 const program = new Command()
 
 program
-  .name("airfi-swap")
+  .name("a2a-swap")
   .description("AI agent-to-agent OTC swap CLI — P2P trades with reputation gating")
   .version("0.1.0")
 

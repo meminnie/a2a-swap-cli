@@ -160,9 +160,9 @@ pnpm cli trust 0x1234...abcd
 ## SDK
 
 ```typescript
-import { AirfiSwap } from "@airfi/swap"
+import { A2ASwap } from "a2a-swap"
 
-const otc = new AirfiSwap({ apiUrl: "http://localhost:8080" })
+const otc = new A2ASwap({ apiUrl: "http://localhost:8080" })
 
 // Create an offer
 const offer = await otc.propose({
@@ -280,7 +280,7 @@ Buyer  CLI ──> API Server ──> Operator EOA (CREATE2 deploy + settle)
 ```
 src/
   cli/commands/       CLI command implementations
-  sdk/index.ts        SDK (AirfiSwap class)
+  sdk/index.ts        SDK (A2ASwap class)
   api.ts              API client with signature auth
   config.ts           Environment config
   contract.ts         ethers.js signer/provider

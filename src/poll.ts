@@ -35,5 +35,5 @@ export async function pollAndUnwrap(
     }
   }
 
-  console.info("  Timed out waiting for settlement. Run 'airfi-swap unwrap' manually.")
+  console.info("  Timed out waiting for settlement. Run 'a2a-swap unwrap' manually.")
 }
