@@ -23,7 +23,7 @@ export function registerProposeCommand(program: Command): void {
     .description("Create a new OTC swap offer")
     .requiredOption("--sell <amount_token>", "Amount and token to sell (e.g. '1000 USDC')")
     .requiredOption("--buy <amount_token>", "Amount and token to buy (e.g. '0.5 ETH')")
-    .option("--chain <chain>", "Target chain", "base-sepolia")
+    .option("--chain <chain>", "Target chain", "base")
     .option("--duration <seconds>", "Offer duration in seconds", "3600")
     .option("--min-score <score>", "Minimum buyer reputation score", "0")
     .option("--wallet <name>", "Wallet name (loads PRIVATE_KEY_<NAME> from .env)")

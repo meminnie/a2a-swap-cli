@@ -38,7 +38,7 @@ export function registerAcceptCommand(program: Command): void {
 
         // 3. Wrap ETH if buyer is paying with native token
         const buyAmount = BigInt(offer.buyAmount)
-        const chain = offer.chain ?? "base-sepolia"
+        const chain = offer.chain ?? "base"
         const wethAddress = getWethAddress(chain)
         const isBuyNative = offer.buyToken.toLowerCase() === wethAddress.toLowerCase()
 

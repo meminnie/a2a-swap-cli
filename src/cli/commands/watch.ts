@@ -17,7 +17,7 @@ export function registerWatchCommand(program: Command): void {
   program
     .command("watch")
     .description("Watch for new offers (polls API every 10s)")
-    .option("--chain <chain>", "Filter by chain", "base-sepolia")
+    .option("--chain <chain>", "Filter by chain", "base")
     .option("--interval <seconds>", "Poll interval in seconds", "10")
     .action(async (options: { readonly chain: string; readonly interval: string }) => {
       try {

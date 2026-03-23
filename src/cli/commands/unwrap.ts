@@ -15,7 +15,7 @@ export function registerUnwrapCommand(program: Command): void {
   program
     .command("unwrap")
     .description("Unwrap WETH → ETH (converts WETH balance to native ETH)")
-    .option("--chain <chain>", "Target chain", "base-sepolia")
+    .option("--chain <chain>", "Target chain", "base")
     .option("--amount <ether>", "Amount to unwrap (default: all)")
     .option("--wallet <name>", "Wallet name (loads PRIVATE_KEY_<NAME> from .env)")
     .action(async (options: UnwrapOptions) => {

@@ -11,7 +11,7 @@ export function registerListCommand(program: Command): void {
   program
     .command("list")
     .description("View open OTC offers")
-    .option("--chain <chain>", "Filter by chain", "base-sepolia")
+    .option("--chain <chain>", "Filter by chain", "base")
     .action(async (options: ListOptions) => {
       try {
         console.info(`Fetching offers on ${options.chain}...`)

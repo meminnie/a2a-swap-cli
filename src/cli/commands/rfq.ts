@@ -20,7 +20,7 @@ export function registerRfqCommand(program: Command): void {
     .description("Broadcast a Request for Quote")
     .requiredOption("--need <amount_token>", "What you need (e.g. '0.5 ETH')")
     .requiredOption("--budget <amount_token>", "Your budget (e.g. '1000 USDC')")
-    .option("--chain <chain>", "Target chain", "base-sepolia")
+    .option("--chain <chain>", "Target chain", "base")
     .option("--duration <seconds>", "RFQ duration in seconds", "3600")
     .option("--min-score <score>", "Minimum quoter reputation score", "0")
     .option("--wallet <name>", "Wallet name (loads PRIVATE_KEY_<NAME> from .env)")

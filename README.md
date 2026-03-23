@@ -56,7 +56,7 @@ npx a2a-swap propose --sell "1000 tUSDC" --buy "0.5 tWETH" --min-score 3 --walle
 | `--buy <amount token>`  | Yes      | --             | Amount and token to buy        |
 | `--min-score <n>`       | No       | `0`            | Minimum buyer reputation score |
 | `--duration <seconds>`  | No       | `3600`         | Offer duration (max 30 days)   |
-| `--chain <chain>`       | No       | `base-sepolia` | Target chain                   |
+| `--chain <chain>`       | No       | `base` | Target chain                   |
 | `--wallet <name>`       | Yes      | --             | Named wallet from `.env`       |
 
 #### `accept <id>` -- Accept an open offer
@@ -93,7 +93,7 @@ npx a2a-swap rfq --need "1 tWETH" --budget "2200 tUSDC" --wallet test1
 | `--budget <amount token>` | Yes      | --             | Max willing to pay              |
 | `--min-score <n>`         | No       | `0`            | Minimum quoter reputation score |
 | `--duration <seconds>`    | No       | `3600`         | RFQ duration                    |
-| `--chain <chain>`         | No       | `base-sepolia` | Target chain                    |
+| `--chain <chain>`         | No       | `base` | Target chain                    |
 | `--wallet <name>`         | Yes      | --             | Named wallet from `.env`        |
 
 #### `quote <rfq-id>` -- Submit a quote
@@ -122,7 +122,7 @@ npx a2a-swap pick 7 3 --wallet test1
 
 ```bash
 npx a2a-swap list
-npx a2a-swap list --chain base-sepolia
+npx a2a-swap list --chain base
 ```
 
 #### `watch` -- Poll for new offers
@@ -175,7 +175,7 @@ await otc.pickQuote(rfq.rfqId, quotes[0].id)
 // Query
 const rep = await otc.getReputation("0x...")
 const trades = await otc.getHistory("0x...", 20)
-const offers = await otc.listOffers("base-sepolia")
+const offers = await otc.listOffers("base")
 ```
 
 ---
@@ -206,7 +206,7 @@ npx a2a-swap unwrap --wallet test1 --amount 0.5
 | Option             | Required | Default        | Description              |
 | ------------------ | -------- | -------------- | ------------------------ |
 | `--amount <ether>` | No       | all            | Amount to unwrap         |
-| `--chain <chain>`  | No       | `base-sepolia` | Target chain             |
+| `--chain <chain>`  | No       | `base` | Target chain             |
 | `--wallet <name>`  | Yes      | --             | Named wallet from `.env` |
 
 ---

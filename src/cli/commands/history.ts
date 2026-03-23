@@ -10,7 +10,7 @@ export function registerHistoryCommand(program: Command): void {
     .command("history")
     .description("View past trade records")
     .option("--limit <n>", "Number of records to show", "20")
-    .option("--chain <chain>", "Target chain", "base-sepolia")
+    .option("--chain <chain>", "Target chain", "base")
     .option("--wallet <name>", "Wallet name (loads PRIVATE_KEY_<NAME> from .env)")
     .action(async (options: { readonly limit: string; readonly chain: string; readonly wallet?: string }) => {
       try {

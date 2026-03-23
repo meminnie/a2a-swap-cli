@@ -17,7 +17,7 @@ export function registerQuoteCommand(program: Command): void {
     .command("quote <rfq-id>")
     .description("Submit a quote for an RFQ")
     .requiredOption("--offer <amount_token>", "Your offer (e.g. '0.5 ETH')")
-    .option("--chain <chain>", "Target chain", "base-sepolia")
+    .option("--chain <chain>", "Target chain", "base")
     .option("--wallet <name>", "Wallet name (loads PRIVATE_KEY_<NAME> from .env)")
     .action(async (rfqId: string, options: QuoteOptions) => {
       try {
