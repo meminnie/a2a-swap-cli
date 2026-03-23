@@ -124,28 +124,6 @@ $CLI unwrap --wallet test1
 $CLI unwrap --wallet test1 --amount 0.005
 
 # ══════════════════════════════════════════
-# Gasless 테스트 (ZERODEV_* 환경변수 필요)
-# ══════════════════════════════════════════
-
-# 서버에서 GASLESS_ENABLED=true 설정 필요
-
-# 1) gasless 오퍼 생성
-$CLI propose --sell "50 USDC" --buy "0.02 ETH" --wallet test1 --gasless
-
-# 2) gasless accept
-$CLI accept <offer-id> --wallet test2 --gasless
-
-# 3) gasless cancel
-$CLI cancel <offer-id> --wallet test1 --gasless
-
-# 4) gasless unwrap
-$CLI unwrap --wallet test1 --gasless
-
-# 5) 서버 gasless OFF 테스트 (GASLESS_ENABLED=false)
-$CLI propose --sell "50 USDC" --buy "0.02 ETH" --wallet test1 --gasless
-# → "Gasless mode is disabled by server" 에러
-
-# ══════════════════════════════════════════
 # 에러 케이스
 # ══════════════════════════════════════════
 
