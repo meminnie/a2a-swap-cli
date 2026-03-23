@@ -11,7 +11,13 @@ export async function sendGaslessTransaction(
 ): Promise<string> {
   const data = encodeFunctionData({ abi, functionName, args })
 
+  if (!kernelClient.account) {
+    throw new Error("Kernel client has no account attached")
+  }
+
   const txHash = await kernelClient.sendTransaction({
+    account: kernelClient.account,
+    chain: kernelClient.chain,
     to: to as Hex,
     data,
     value: value ?? 0n,

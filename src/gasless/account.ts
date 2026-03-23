@@ -10,8 +10,7 @@ import {
 } from "@zerodev/sdk"
 import type { GaslessConfig } from "./config"
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export type KernelClient = any
+export type KernelClient = Awaited<ReturnType<typeof createKernelAccountClient>>
 
 export interface SmartAccountBundle {
   readonly kernelClient: KernelClient
