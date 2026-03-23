@@ -48,10 +48,12 @@ export async function wrapETH(
 
   const weth = getWethContract(wethAddress, signer)
   const tx = await weth.deposit({ value: amount })
-  const receipt = await tx.wait()
+  const receipt = await tx.wait(1)
   if (!receipt) {
     throw new Error(`Wrap transaction ${tx.hash} was not mined`)
   }
+  // Wait for RPC node to sync nonce after wrap
+  await new Promise(resolve => setTimeout(resolve, 2000))
   return receipt
 }
 
@@ -74,7 +76,7 @@ export async function unwrapWETH(
   }
 
   const tx = await weth.withdraw(withdrawAmount)
-  const receipt = await tx.wait()
+  const receipt = await tx.wait(1)
   if (!receipt) {
     throw new Error(`Unwrap transaction ${tx.hash} was not mined`)
   }
