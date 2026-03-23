@@ -50,14 +50,14 @@ npx a2a-swap propose --sell "1000 tUSDC" --buy "0.5 tWETH" --wallet test1
 npx a2a-swap propose --sell "1000 tUSDC" --buy "0.5 tWETH" --min-score 3 --wallet test1
 ```
 
-| Option | Required | Default | Description |
-|--------|----------|---------|-------------|
-| `--sell <amount token>` | Yes | -- | Amount and token to sell |
-| `--buy <amount token>` | Yes | -- | Amount and token to buy |
-| `--min-score <n>` | No | `0` | Minimum buyer reputation score |
-| `--duration <seconds>` | No | `3600` | Offer duration (max 30 days) |
-| `--chain <chain>` | No | `base-sepolia` | Target chain |
-| `--wallet <name>` | Yes | -- | Named wallet from `.env` |
+| Option                  | Required | Default        | Description                    |
+| ----------------------- | -------- | -------------- | ------------------------------ |
+| `--sell <amount token>` | Yes      | --             | Amount and token to sell       |
+| `--buy <amount token>`  | Yes      | --             | Amount and token to buy        |
+| `--min-score <n>`       | No       | `0`            | Minimum buyer reputation score |
+| `--duration <seconds>`  | No       | `3600`         | Offer duration (max 30 days)   |
+| `--chain <chain>`       | No       | `base-sepolia` | Target chain                   |
+| `--wallet <name>`       | Yes      | --             | Named wallet from `.env`       |
 
 #### `accept <id>` -- Accept an open offer
 
@@ -87,14 +87,14 @@ Post what you need and your budget. Other agents/users submit competing quotes.
 npx a2a-swap rfq --need "1 tWETH" --budget "2200 tUSDC" --wallet test1
 ```
 
-| Option | Required | Default | Description |
-|--------|----------|---------|-------------|
-| `--need <amount token>` | Yes | -- | Token and amount needed |
-| `--budget <amount token>` | Yes | -- | Max willing to pay |
-| `--min-score <n>` | No | `0` | Minimum quoter reputation score |
-| `--duration <seconds>` | No | `3600` | RFQ duration |
-| `--chain <chain>` | No | `base-sepolia` | Target chain |
-| `--wallet <name>` | Yes | -- | Named wallet from `.env` |
+| Option                    | Required | Default        | Description                     |
+| ------------------------- | -------- | -------------- | ------------------------------- |
+| `--need <amount token>`   | Yes      | --             | Token and amount needed         |
+| `--budget <amount token>` | Yes      | --             | Max willing to pay              |
+| `--min-score <n>`         | No       | `0`            | Minimum quoter reputation score |
+| `--duration <seconds>`    | No       | `3600`         | RFQ duration                    |
+| `--chain <chain>`         | No       | `base-sepolia` | Target chain                    |
+| `--wallet <name>`         | Yes      | --             | Named wallet from `.env`        |
 
 #### `quote <rfq-id>` -- Submit a quote
 
@@ -152,7 +152,7 @@ npx a2a-swap trust 0x1234...abcd
 ```typescript
 import { A2ASwap } from "a2a-swap"
 
-const otc = new A2ASwap({ apiUrl: "http://localhost:8080" })
+const otc = new A2ASwap()
 
 // Create an offer
 const offer = await otc.propose({
@@ -182,11 +182,11 @@ const offers = await otc.listOffers("base-sepolia")
 
 ## Reputation System
 
-| Event | Score Delta |
-|-------|-------------|
-| Successful swap | **+1** (both sides) |
-| Buyer timeout (no deposit) | **-3** (buyer) |
-| Post-match cancellation | **-2** (canceller) |
+| Event                      | Score Delta         |
+| -------------------------- | ------------------- |
+| Successful swap            | **+1** (both sides) |
+| Buyer timeout (no deposit) | **-3** (buyer)      |
+| Post-match cancellation    | **-2** (canceller)  |
 
 ```
 score = successful_swaps - (failed_swaps * 3) - (cancellations * 2)
@@ -203,11 +203,11 @@ npx a2a-swap unwrap --wallet test1
 npx a2a-swap unwrap --wallet test1 --amount 0.5
 ```
 
-| Option | Required | Default | Description |
-|--------|----------|---------|-------------|
-| `--amount <ether>` | No | all | Amount to unwrap |
-| `--chain <chain>` | No | `base-sepolia` | Target chain |
-| `--wallet <name>` | Yes | -- | Named wallet from `.env` |
+| Option             | Required | Default        | Description              |
+| ------------------ | -------- | -------------- | ------------------------ |
+| `--amount <ether>` | No       | all            | Amount to unwrap         |
+| `--chain <chain>`  | No       | `base-sepolia` | Target chain             |
+| `--wallet <name>`  | Yes      | --             | Named wallet from `.env` |
 
 ---
 
@@ -226,23 +226,24 @@ npx a2a-swap unwrap --wallet test1   # manual unwrap if needed
 
 ### Base Sepolia (Testnet)
 
-| Symbol | Decimals | Address |
-|--------|----------|---------|
-| USDC | 6 | `0x036CbD53842c5426634e7929541eC2318f3dCF7e` |
-| WETH | 18 | `0x4200000000000000000000000000000000000006` |
-| DAI | 18 | `0x7683022d84F726a96c4A6611cD31DBf5409c0Ac9` |
-| tUSDC | 18 | `0xc210208ee5Ad77FFa7E0eB0690f74a2E269d42b2` |
-| tWETH | 18 | `0x4322cB832Ab806cC123540428125a92180725a23` |
+| Symbol | Decimals | Address                                      |
+| ------ | -------- | -------------------------------------------- |
+| USDC   | 6        | `0x036CbD53842c5426634e7929541eC2318f3dCF7e` |
+| WETH   | 18       | `0x4200000000000000000000000000000000000006` |
+| DAI    | 18       | `0x7683022d84F726a96c4A6611cD31DBf5409c0Ac9` |
+| tUSDC  | 18       | `0xc210208ee5Ad77FFa7E0eB0690f74a2E269d42b2` |
+| tWETH  | 18       | `0x4322cB832Ab806cC123540428125a92180725a23` |
 
 ### Base (Mainnet)
 
-| Symbol | Decimals | Address |
-|--------|----------|---------|
-| USDC | 6 | `0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913` |
-| WETH | 18 | `0x4200000000000000000000000000000000000006` |
-| DAI | 18 | `0x50c5725949A6F0c72E6C4a641F24049A917DB0Cb` |
+| Symbol | Decimals | Address                                      |
+| ------ | -------- | -------------------------------------------- |
+| USDC   | 6        | `0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913` |
+| WETH   | 18       | `0x4200000000000000000000000000000000000006` |
+| DAI    | 18       | `0x50c5725949A6F0c72E6C4a641F24049A917DB0Cb` |
 
 You can also pass raw token addresses instead of symbols:
+
 ```bash
 npx a2a-swap propose --sell "1000 0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913" --buy "0.5 WETH" --wallet test1
 ```
