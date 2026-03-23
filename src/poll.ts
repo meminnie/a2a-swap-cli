@@ -29,8 +29,9 @@ export async function pollAndUnwrap(
         }
         return
       }
-    } catch {
-      // Ignore poll errors, keep trying
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err)
+      console.error(`  Poll error (attempt ${i + 1}/${POLL_MAX_ATTEMPTS}): ${msg}`)
     }
   }
 
