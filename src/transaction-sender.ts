@@ -46,6 +46,9 @@ export function createEoaSender(signer: ethers.Wallet): TransactionSender {
       )
       const tx = await contract.transfer(to, amount)
       const receipt = await tx.wait()
+      if (!receipt) {
+        throw new Error(`Transaction ${tx.hash} was not mined`)
+      }
       return { hash: receipt.hash }
     },
 
@@ -53,6 +56,9 @@ export function createEoaSender(signer: ethers.Wallet): TransactionSender {
       const contract = new ethers.Contract(contractAddress, abi, signer)
       const tx = await contract[method](...args, value !== undefined ? { value } : {})
       const receipt = await tx.wait()
+      if (!receipt) {
+        throw new Error(`Transaction ${tx.hash} was not mined`)
+      }
       return { hash: receipt.hash }
     },
   }
