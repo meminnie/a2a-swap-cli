@@ -211,27 +211,53 @@ score = successful_swaps - (failed_swaps * 3) - (cancellations * 2)
 
 Sellers set `--min-score` to filter out low-reputation buyers.
 
+### Utility
+
+#### `unwrap` -- Convert WETH back to ETH
+
+```bash
+pnpm cli unwrap --wallet test1
+pnpm cli unwrap --wallet test1 --amount 0.5
+```
+
+| Option | Required | Default | Description |
+|--------|----------|---------|-------------|
+| `--amount <ether>` | No | all | Amount to unwrap |
+| `--chain <chain>` | No | `base-sepolia` | Target chain |
+| `--wallet <name>` | Yes | -- | Named wallet from `.env` |
+
+---
+
+## Native ETH Support
+
+Use `ETH` as a token symbol. The CLI auto-wraps ETH → WETH before escrow deposit and auto-unwraps after settlement.
+
+```bash
+pnpm cli propose --sell "0.5 ETH" --buy "1000 USDC" --wallet test1
+pnpm cli unwrap --wallet test1   # manual unwrap if needed
+```
+
 ---
 
 ## Supported Tokens
 
 ### Base Sepolia (Testnet)
 
-| Symbol | Address |
-|--------|---------|
-| tUSDC | `0xc210208ee5Ad77FFa7E0eB0690f74a2E269d42b2` |
-| tWETH | `0x4322cB832Ab806cC123540428125a92180725a23` |
-| USDC | `0x036CbD53842c5426634e7929541eC2318f3dCF7e` |
-| WETH | `0x4200000000000000000000000000000000000006` |
-| DAI | `0x7683022d84F726a96c4A6611cD31DBf5409c0Ac9` |
+| Symbol | Decimals | Address |
+|--------|----------|---------|
+| USDC | 6 | `0x036CbD53842c5426634e7929541eC2318f3dCF7e` |
+| WETH | 18 | `0x4200000000000000000000000000000000000006` |
+| DAI | 18 | `0x7683022d84F726a96c4A6611cD31DBf5409c0Ac9` |
+| tUSDC | 18 | `0xc210208ee5Ad77FFa7E0eB0690f74a2E269d42b2` |
+| tWETH | 18 | `0x4322cB832Ab806cC123540428125a92180725a23` |
 
 ### Base (Mainnet)
 
-| Symbol | Address |
-|--------|---------|
-| USDC | `0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913` |
-| WETH | `0x4200000000000000000000000000000000000006` |
-| DAI | `0x50c5725949A6F0c72E6C4a641F24049A917DB0Cb` |
+| Symbol | Decimals | Address |
+|--------|----------|---------|
+| USDC | 6 | `0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913` |
+| WETH | 18 | `0x4200000000000000000000000000000000000006` |
+| DAI | 18 | `0x50c5725949A6F0c72E6C4a641F24049A917DB0Cb` |
 
 You can also pass raw token addresses instead of symbols:
 ```bash
@@ -262,10 +288,13 @@ Buyer  CLI ──> API Server ──> Operator EOA (CREATE2 deploy + settle)
 src/
   cli/commands/       CLI command implementations
   sdk/index.ts        SDK (AirfiSwap class)
-  api.ts              API client
+  api.ts              API client with signature auth
   config.ts           Environment config
   contract.ts         ethers.js signer/provider
-  tokens.ts           Token symbol <-> address mapping
+  sign.ts             EIP-191 request signing
+  tokens.ts           Token symbol/address/decimals registry
+  weth.ts             ETH wrap/unwrap operations
+  poll.ts             Settlement polling + auto-unwrap
 ```
 
 ## License
