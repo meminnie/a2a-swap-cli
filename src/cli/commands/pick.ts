@@ -25,30 +25,33 @@ export function registerPickCommand(program: Command): void {
       try {
         const config = loadConfig(options.wallet)
         const signer = getSigner(config)
+        const parsedRfqId = parsePositiveInt(rfqId, "rfq-id")
+        const parsedQuoteId = parsePositiveInt(quoteId, "quote-id")
 
+        // 1. Fetch RFQ first (need chain for gasless SA)
+        const rfq = await getOffer(parsedRfqId)
+        const chain = rfq.chain ?? "base-sepolia"
+
+        // 2. Create sender with correct chain
         let sender: TransactionSender
 
         if (options.gasless) {
           await requireGasless()
           const gaslessConfig = loadGaslessConfig()
-          sender = await createGaslessSender(config.privateKey, gaslessConfig)
+          sender = await createGaslessSender(config.privateKey, gaslessConfig, chain)
           console.info(`Smart Account: ${sender.address}`)
         } else {
           sender = createEoaSender(signer)
         }
 
-        // 1. Pick quote via API → deploys escrow
+        // 3. Pick quote via API → deploys escrow
         console.info(`Picking quote #${quoteId} for RFQ #${rfqId}...`)
-        const parsedRfqId = parsePositiveInt(rfqId, "rfq-id")
-        const parsedQuoteId = parsePositiveInt(quoteId, "quote-id")
         const wallet = await signer.getAddress()
         const result = await pickQuote(parsedRfqId, parsedQuoteId, wallet, signer)
 
         console.info(`Escrow deployed: ${result.escrowAddress}`)
 
-        // 2. Get RFQ details to transfer tokens
-        const rfq = await getOffer(parsedRfqId)
-
+        // 4. Transfer tokens to escrow
         console.info("Transferring tokens to escrow...")
         const transferResult = await sender.sendErc20Transfer(
           rfq.sellToken,

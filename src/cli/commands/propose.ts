@@ -13,7 +13,6 @@ import {
 } from "../../transaction-sender"
 import { loadGaslessConfig, requireGasless } from "../../gasless"
 import { fundAndWrapETH } from "../../gasless/wrap-helper"
-import { createSmartAccount } from "../../gasless/account"
 
 interface ProposeOptions {
   readonly sell: string
@@ -100,10 +99,8 @@ export function registerProposeCommand(program: Command): void {
 
         // 2. Wrap ETH if native token, then transfer to escrow
         if (isNativeToken(sellToken)) {
-          if (options.gasless) {
-            const gaslessConfig = loadGaslessConfig()
-            const { kernelClient } = await createSmartAccount(config.privateKey, gaslessConfig, options.chain)
-            await fundAndWrapETH(signer, sender.address, kernelClient, getWethAddress(options.chain), sellAmountWei)
+          if (options.gasless && sender.kernelClient) {
+            await fundAndWrapETH(signer, sender.address, sender.kernelClient, getWethAddress(options.chain), sellAmountWei)
           } else {
             console.info("Wrapping ETH → WETH...")
             await wrapETH(signer, getWethAddress(options.chain), sellAmountWei)

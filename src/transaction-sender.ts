@@ -10,6 +10,7 @@ export interface TransactionResult {
 
 export interface TransactionSender {
   readonly address: string
+  readonly kernelClient?: KernelClient
   sendErc20Transfer(tokenAddress: string, to: string, amount: bigint): Promise<TransactionResult>
   sendContractCall(
     contractAddress: string,
@@ -75,6 +76,7 @@ export async function createGaslessSender(
 
   return {
     address: smartAccountAddress,
+    kernelClient,
 
     async sendErc20Transfer(tokenAddress, to, amount) {
       const hash = await sendGaslessTransaction(

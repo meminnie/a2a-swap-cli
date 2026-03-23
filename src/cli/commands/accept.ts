@@ -1,5 +1,4 @@
 import { Command } from "commander"
-import { ethers } from "ethers"
 import { loadConfig } from "../../config"
 import { getSigner } from "../../contract"
 import { acceptOffer, getOffer } from "../../api"
@@ -14,7 +13,6 @@ import {
 } from "../../transaction-sender"
 import { loadGaslessConfig, requireGasless } from "../../gasless"
 import { fundAndWrapETH } from "../../gasless/wrap-helper"
-import { createSmartAccount } from "../../gasless/account"
 
 interface AcceptOptions {
   readonly wallet?: string
@@ -33,49 +31,48 @@ export function registerAcceptCommand(program: Command): void {
         const signer = getSigner(config)
         const buyerAddress = await signer.getAddress()
 
+        // 1. Get offer details first (need chain for gasless SA)
+        console.info(`Fetching offer #${offerId}...`)
+        const id = parsePositiveInt(offerId, "offer-id")
+        const offer = await getOffer(id)
+        const chain = offer.chain ?? "base-sepolia"
+
+        // 2. Create sender with correct chain
         let sender: TransactionSender
         let onChainAddress: string | undefined
 
         if (options.gasless) {
           await requireGasless()
           const gaslessConfig = loadGaslessConfig()
-          sender = await createGaslessSender(config.privateKey, gaslessConfig)
+          sender = await createGaslessSender(config.privateKey, gaslessConfig, chain)
           onChainAddress = sender.address
           console.info(`Smart Account: ${onChainAddress}`)
         } else {
           sender = createEoaSender(signer)
         }
 
-        // 1. Get offer details
-        console.info(`Fetching offer #${offerId}...`)
-        const id = parsePositiveInt(offerId, "offer-id")
-        const offer = await getOffer(id)
-
-        // 2. Accept via API → triggers contract deployment
+        // 3. Accept via API → triggers contract deployment
         console.info("Accepting offer (deploying escrow)...")
         const result = await acceptOffer(id, buyerAddress, signer, onChainAddress)
 
         console.info(`Escrow deployed: ${result.escrowAddress}`)
         console.info(`Deposit deadline: ${result.depositDeadline}`)
 
-        // 3. Wrap ETH if buyer is paying with native token
+        // 4. Wrap ETH if buyer is paying with native token
         const buyAmount = BigInt(offer.buyAmount)
-        const chain = offer.chain ?? "base-sepolia"
         const wethAddress = getWethAddress(chain)
         const isBuyNative = offer.buyToken.toLowerCase() === wethAddress.toLowerCase()
 
         if (isBuyNative) {
-          if (options.gasless) {
-            const gaslessConfig = loadGaslessConfig()
-            const { kernelClient } = await createSmartAccount(config.privateKey, gaslessConfig, chain)
-            await fundAndWrapETH(signer, sender.address, kernelClient, wethAddress, buyAmount)
+          if (options.gasless && sender.kernelClient) {
+            await fundAndWrapETH(signer, sender.address, sender.kernelClient, wethAddress, buyAmount)
           } else {
             console.info("Wrapping ETH → WETH...")
             await wrapETH(signer, wethAddress, buyAmount)
           }
         }
 
-        // 4. Transfer buy tokens to deployed escrow
+        // 5. Transfer buy tokens to deployed escrow
         console.info("Transferring tokens to escrow...")
         const transferResult = await sender.sendErc20Transfer(
           offer.buyToken,
@@ -88,7 +85,7 @@ export function registerAcceptCommand(program: Command): void {
         console.info(`  Escrow:   ${result.escrowAddress}`)
         console.info(`  Tx:       ${transferResult.hash}`)
 
-        // 5. Poll for settlement, then auto-unwrap if receiving WETH
+        // 6. Poll for settlement, then auto-unwrap if receiving WETH
         const sellToken = offer.sellToken.toLowerCase()
         const willReceiveWeth = sellToken === wethAddress.toLowerCase()
         const sellAmount = BigInt(offer.sellAmount)
