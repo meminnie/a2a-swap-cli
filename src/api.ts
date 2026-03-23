@@ -4,7 +4,15 @@ import { signRequest } from "./sign"
 
 dotenv.config()
 
-const API_URL = process.env.API_URL ?? "http://localhost:3000"
+let apiUrlOverride: string | undefined
+
+export function setApiUrl(url: string): void {
+  apiUrlOverride = url
+}
+
+function getApiUrl(): string {
+  return apiUrlOverride ?? process.env.API_URL ?? "http://localhost:3000"
+}
 
 interface ApiResponse<T> {
   readonly success: boolean
@@ -34,7 +42,7 @@ async function request<T>(
 
   const { signer: _signer, ...fetchOptions } = options ?? {}
 
-  const res = await fetch(`${API_URL}${path}`, {
+  const res = await fetch(`${getApiUrl()}${path}`, {
     ...fetchOptions,
     headers,
   })

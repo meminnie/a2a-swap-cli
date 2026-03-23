@@ -1,5 +1,6 @@
 import type { ethers } from "ethers"
 import * as api from "../api"
+import { setApiUrl } from "../api"
 
 export type {
   OfferListItem,
@@ -22,7 +23,7 @@ export class AirfiSwap {
 
   constructor(config: AirfiSwapConfig) {
     if (config.apiUrl) {
-      process.env.API_URL = config.apiUrl
+      setApiUrl(config.apiUrl)
     }
     this.signer = config.signer
   }
