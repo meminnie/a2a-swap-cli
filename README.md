@@ -14,13 +14,10 @@
 - Reputation gating -- sellers choose who can accept their offers
 - Two swap modes: **Direct offers** and **RFQ (Request for Quote)**
 
-## Setup
+## Install
 
 ```bash
-git clone https://github.com/meminnie/a2a-swap-cli.git
-cd a2a-swap-cli
-pnpm install
-cp .env.example .env
+npm install a2a-swap
 ```
 
 Add your wallet private key to `.env`:
@@ -28,15 +25,12 @@ Add your wallet private key to `.env`:
 ```env
 # Wallet (use --wallet mykey)
 PRIVATE_KEY_MYKEY=0x...
-
-# API server
-API_URL=https://a2a-swap-server-production.up.railway.app
 ```
 
 ## Usage
 
 ```bash
-pnpm cli <command> [options]
+npx a2a-swap <command> [options]
 ```
 
 All commands require `--wallet <name>` to select a wallet from `.env`.
@@ -52,8 +46,8 @@ All commands require `--wallet <name>` to select a wallet from `.env`.
 Computes a CREATE2 escrow address and transfers your sell tokens to it.
 
 ```bash
-pnpm cli propose --sell "1000 tUSDC" --buy "0.5 tWETH" --wallet test1
-pnpm cli propose --sell "1000 tUSDC" --buy "0.5 tWETH" --min-score 3 --wallet test1
+npx a2a-swap propose --sell "1000 tUSDC" --buy "0.5 tWETH" --wallet test1
+npx a2a-swap propose --sell "1000 tUSDC" --buy "0.5 tWETH" --min-score 3 --wallet test1
 ```
 
 | Option | Required | Default | Description |
@@ -70,7 +64,7 @@ pnpm cli propose --sell "1000 tUSDC" --buy "0.5 tWETH" --min-score 3 --wallet te
 Deploys the escrow contract and transfers your buy tokens to it. Settlement happens automatically.
 
 ```bash
-pnpm cli accept 42 --wallet test2
+npx a2a-swap accept 42 --wallet test2
 ```
 
 #### `cancel <id>` -- Cancel an offer
@@ -78,7 +72,7 @@ pnpm cli accept 42 --wallet test2
 Free if still open. Reputation penalty (-2) if already matched.
 
 ```bash
-pnpm cli cancel 42 --wallet test1
+npx a2a-swap cancel 42 --wallet test1
 ```
 
 ---
@@ -90,7 +84,7 @@ pnpm cli cancel 42 --wallet test1
 Post what you need and your budget. Other agents/users submit competing quotes.
 
 ```bash
-pnpm cli rfq --need "1 tWETH" --budget "2200 tUSDC" --wallet test1
+npx a2a-swap rfq --need "1 tWETH" --budget "2200 tUSDC" --wallet test1
 ```
 
 | Option | Required | Default | Description |
@@ -105,19 +99,19 @@ pnpm cli rfq --need "1 tWETH" --budget "2200 tUSDC" --wallet test1
 #### `quote <rfq-id>` -- Submit a quote
 
 ```bash
-pnpm cli quote 7 --offer "0.9 tWETH" --wallet test2
+npx a2a-swap quote 7 --offer "0.9 tWETH" --wallet test2
 ```
 
 #### `quotes <rfq-id>` -- List quotes
 
 ```bash
-pnpm cli quotes 7
+npx a2a-swap quotes 7
 ```
 
 #### `pick <rfq-id> <quote-id>` -- Accept a quote
 
 ```bash
-pnpm cli pick 7 3 --wallet test1
+npx a2a-swap pick 7 3 --wallet test1
 ```
 
 ---
@@ -127,28 +121,28 @@ pnpm cli pick 7 3 --wallet test1
 #### `list` -- View open offers
 
 ```bash
-pnpm cli list
-pnpm cli list --chain base-sepolia
+npx a2a-swap list
+npx a2a-swap list --chain base-sepolia
 ```
 
 #### `watch` -- Poll for new offers
 
 ```bash
-pnpm cli watch
-pnpm cli watch --interval 5
+npx a2a-swap watch
+npx a2a-swap watch --interval 5
 ```
 
 #### `history` -- View past trades
 
 ```bash
-pnpm cli history --wallet test1
-pnpm cli history --wallet test1 --limit 50
+npx a2a-swap history --wallet test1
+npx a2a-swap history --wallet test1 --limit 50
 ```
 
 #### `trust <address>` -- Check reputation
 
 ```bash
-pnpm cli trust 0x1234...abcd
+npx a2a-swap trust 0x1234...abcd
 ```
 
 ---
@@ -205,8 +199,8 @@ Sellers set `--min-score` to filter out low-reputation buyers.
 #### `unwrap` -- Convert WETH back to ETH
 
 ```bash
-pnpm cli unwrap --wallet test1
-pnpm cli unwrap --wallet test1 --amount 0.5
+npx a2a-swap unwrap --wallet test1
+npx a2a-swap unwrap --wallet test1 --amount 0.5
 ```
 
 | Option | Required | Default | Description |
@@ -222,8 +216,8 @@ pnpm cli unwrap --wallet test1 --amount 0.5
 Use `ETH` as a token symbol. The CLI auto-wraps ETH → WETH before escrow deposit and auto-unwraps after settlement.
 
 ```bash
-pnpm cli propose --sell "0.5 ETH" --buy "1000 USDC" --wallet test1
-pnpm cli unwrap --wallet test1   # manual unwrap if needed
+npx a2a-swap propose --sell "0.5 ETH" --buy "1000 USDC" --wallet test1
+npx a2a-swap unwrap --wallet test1   # manual unwrap if needed
 ```
 
 ---
@@ -250,7 +244,7 @@ pnpm cli unwrap --wallet test1   # manual unwrap if needed
 
 You can also pass raw token addresses instead of symbols:
 ```bash
-pnpm cli propose --sell "1000 0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913" --buy "0.5 WETH" --wallet test1
+npx a2a-swap propose --sell "1000 0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913" --buy "0.5 WETH" --wallet test1
 ```
 
 ---
