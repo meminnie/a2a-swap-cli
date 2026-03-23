@@ -18,7 +18,7 @@ const program = new Command()
 program
   .name("a2a-swap")
   .description("AI agent-to-agent OTC swap CLI — P2P trades with reputation gating")
-  .version("0.1.0")
+  .version("0.1.1")
 
 // Swap flow
 registerProposeCommand(program)
