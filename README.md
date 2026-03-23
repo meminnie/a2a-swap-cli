@@ -23,18 +23,14 @@ pnpm install
 cp .env.example .env
 ```
 
-Add your wallet private key(s) to `.env`:
+Add your wallet private key to `.env`:
 
 ```env
-# Use named wallets (--wallet <name>)
-PRIVATE_KEY_TEST1=0x...               # --wallet test1
-PRIVATE_KEY_TEST2=0x...               # --wallet test2
+# Wallet (use --wallet mykey)
+PRIVATE_KEY_MYKEY=0x...
 
 # API server
-API_URL=http://localhost:8080
-
-# RPC endpoint (default: Base Sepolia)
-RPC_URL=https://sepolia.base.org
+API_URL=https://a2a-swap-server-production.up.railway.app
 ```
 
 ## Usage

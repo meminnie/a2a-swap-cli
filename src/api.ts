@@ -11,7 +11,7 @@ export function setApiUrl(url: string): void {
 }
 
 function getApiUrl(): string {
-  return apiUrlOverride ?? process.env.API_URL ?? "http://localhost:3000"
+  return apiUrlOverride ?? process.env.API_URL ?? "http://localhost:8080"
 }
 
 interface ApiResponse<T> {
