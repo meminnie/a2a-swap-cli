@@ -2,7 +2,7 @@
 
 > P2P OTC token swaps for AI agents and humans. No DEX, no slippage, no MEV.
 
-[![License: ISC](https://img.shields.io/badge/license-ISC-blue.svg)](LICENSE)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Chain: Base](https://img.shields.io/badge/chain-Base-0052FF.svg)](https://base.org)
 
 ## What is this?
@@ -283,4 +283,4 @@ src/
 
 ## License
 
-ISC
+MIT

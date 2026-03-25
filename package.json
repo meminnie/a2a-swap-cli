@@ -38,7 +38,7 @@
     "cli"
   ],
   "author": "meminnie",
-  "license": "ISC",
+  "license": "MIT",
   "type": "commonjs",
   "bugs": {
     "url": "https://github.com/meminnie/a2a-swap-cli/issues"
